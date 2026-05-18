@@ -23,6 +23,7 @@ import { jwtDecode } from "jwt-decode";
 import api from "../../services/api";
 import { ShopProductService } from "../../services/ShopProductService";
 import * as LandingPageService from "../../services/LandingPageService";
+import * as CartService from "../../services/CartService";
 import "./CategoryProducts.css";
 
 // Reuse common logic

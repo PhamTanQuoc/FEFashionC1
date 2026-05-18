@@ -1,5 +1,5 @@
 import api from './api';
-import InvoiceService from './InvoiceService';
+import InvoiceService from './invoiceService';
 
 const API_URL = '/order';
 

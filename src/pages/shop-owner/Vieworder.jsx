@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import ShopOrderService from "../../services/ShopOrderService";
-import InvoiceService from "../../services/InvoiceService";
+import InvoiceService from "../../services/invoiceService";
 import "./Vieworder.css";
 import {
   FiSearch,
@@ -716,13 +716,12 @@ export default function Vieworder() {
       {/* Toast Notification */}
       {toast.show && (
         <div
-          className={`fixed top-8 right-8 z-[9999] px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-3 animate-in slide-in-from-right duration-300 ${
-            toast.type === "success"
+          className={`fixed top-8 right-8 z-[9999] px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-3 animate-in slide-in-from-right duration-300 ${toast.type === "success"
               ? "bg-emerald-50 text-emerald-700 border border-emerald-100"
               : toast.type === "error"
                 ? "bg-rose-50 text-rose-700 border border-rose-100"
                 : "bg-blue-50 text-blue-700 border border-blue-100"
-          }`}
+            }`}
         >
           {toast.type === "success" ? (
             <FiCheckCircle size={20} />
@@ -867,11 +866,10 @@ export default function Vieworder() {
                     value={startDate}
                     max={endDate || new Date().toISOString().split("T")[0]}
                     onChange={(e) => handleDateChange("start", e.target.value)}
-                    className={`bg-white border rounded-2xl px-3 py-3.5 text-sm font-bold text-slate-700 focus:outline-none focus:ring-4 transition-all shadow-sm hover:bg-slate-50 ${
-                      errors.some((e) => e.field === "dateRange")
+                    className={`bg-white border rounded-2xl px-3 py-3.5 text-sm font-bold text-slate-700 focus:outline-none focus:ring-4 transition-all shadow-sm hover:bg-slate-50 ${errors.some((e) => e.field === "dateRange")
                         ? "border-rose-300 ring-rose-50"
                         : "border-slate-200 focus:ring-blue-500/5 focus:border-blue-500"
-                    }`}
+                      }`}
                   />
                 </div>
                 <span className="text-slate-300 font-bold">-</span>
@@ -882,11 +880,10 @@ export default function Vieworder() {
                     min={startDate}
                     max={new Date().toISOString().split("T")[0]}
                     onChange={(e) => handleDateChange("end", e.target.value)}
-                    className={`bg-white border rounded-2xl px-3 py-3.5 text-sm font-bold text-slate-700 focus:outline-none focus:ring-4 transition-all shadow-sm hover:bg-slate-50 ${
-                      errors.some((e) => e.field === "dateRange")
+                    className={`bg-white border rounded-2xl px-3 py-3.5 text-sm font-bold text-slate-700 focus:outline-none focus:ring-4 transition-all shadow-sm hover:bg-slate-50 ${errors.some((e) => e.field === "dateRange")
                         ? "border-rose-300 ring-rose-50"
                         : "border-slate-200 focus:ring-blue-500/5 focus:border-blue-500"
-                    }`}
+                      }`}
                   />
                 </div>
               </div>
@@ -1032,22 +1029,20 @@ export default function Vieworder() {
                     <td className="px-6 py-5">
                       <div className="flex justify-center">
                         <span
-                          className={`px-3 py-1.5 rounded-xl text-[11px] font-bold uppercase tracking-wider flex items-center gap-1.5 ${
-                            o.type === "pending"
+                          className={`px-3 py-1.5 rounded-xl text-[11px] font-bold uppercase tracking-wider flex items-center gap-1.5 ${o.type === "pending"
                               ? "bg-amber-50 text-amber-600 ring-1 ring-amber-100"
                               : o.type === "confirmed"
                                 ? "bg-blue-50 text-blue-600 ring-1 ring-blue-100"
                                 : "bg-rose-50 text-rose-600 ring-1 ring-rose-100"
-                          }`}
+                            }`}
                         >
                           <div
-                            className={`w-1.5 h-1.5 rounded-full ${
-                              o.type === "pending"
+                            className={`w-1.5 h-1.5 rounded-full ${o.type === "pending"
                                 ? "bg-amber-500"
                                 : o.type === "confirmed"
                                   ? "bg-blue-500"
                                   : "bg-rose-500"
-                            }`}
+                              }`}
                           />
                           {o.status}
                         </span>
@@ -1056,8 +1051,7 @@ export default function Vieworder() {
                     <td className="px-6 py-5">
                       <div className="flex justify-center">
                         <span
-                          className={`px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-tighter ${
-                            o.paymentStatus === "Success" || o.paymentStatus === "Paid" || o.paymentStatus === "PAID"
+                          className={`px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-tighter ${o.paymentStatus === "Success" || o.paymentStatus === "Paid" || o.paymentStatus === "PAID"
                               ? "bg-emerald-100/50 text-emerald-700"
                               : o.paymentStatus === "Unpaid"
                                 ? "bg-slate-100 text-slate-500"
@@ -1066,7 +1060,7 @@ export default function Vieworder() {
                                   : o.paymentStatus === "Refunded"
                                     ? "bg-orange-100/50 text-orange-700"
                                     : "bg-slate-100 text-slate-500"
-                          }`}
+                            }`}
                         >
                           {o.payment}
                         </span>
@@ -1141,11 +1135,10 @@ export default function Vieworder() {
                       key={page}
                       onClick={() => handlePageChange(page)}
                       disabled={isLoading}
-                      className={`min-w-[36px] h-9 flex items-center justify-center rounded-xl text-sm font-bold transition-all ${
-                        page === currentPage
+                      className={`min-w-[36px] h-9 flex items-center justify-center rounded-xl text-sm font-bold transition-all ${page === currentPage
                           ? "bg-blue-600 text-white shadow-lg shadow-blue-200 scale-105"
                           : "text-slate-500 hover:bg-white hover:text-blue-600 hover:shadow-sm"
-                      }`}
+                        }`}
                     >
                       {page}
                     </button>
@@ -1413,19 +1406,17 @@ export default function Vieworder() {
                       </p>
                       <div className="flex flex-wrap gap-2">
                         <span
-                          className={`px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider ${
-                            fullOrderDetail.orderStatus === "Confirmed"
+                          className={`px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider ${fullOrderDetail.orderStatus === "Confirmed"
                               ? "bg-blue-50 text-blue-600"
                               : fullOrderDetail.orderStatus === "Cancelled"
                                 ? "bg-rose-50 text-rose-600"
                                 : "bg-amber-50 text-amber-600"
-                          }`}
+                            }`}
                         >
                           {fullOrderDetail.orderStatus}
                         </span>
                         <span
-                          className={`px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider ${
-                            fullOrderDetail.paymentStatus === "Success" || fullOrderDetail.paymentStatus === "Paid" || fullOrderDetail.paymentStatus === "PAID"
+                          className={`px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider ${fullOrderDetail.paymentStatus === "Success" || fullOrderDetail.paymentStatus === "Paid" || fullOrderDetail.paymentStatus === "PAID"
                               ? "bg-emerald-50 text-emerald-700"
                               : fullOrderDetail.paymentStatus === "Unpaid"
                                 ? "bg-slate-100 text-slate-500"
@@ -1434,7 +1425,7 @@ export default function Vieworder() {
                                   : fullOrderDetail.paymentStatus === "Refunded"
                                     ? "bg-orange-100 text-orange-700"
                                     : "bg-slate-100 text-slate-500"
-                          }`}
+                            }`}
                         >
                           {fullOrderDetail.paymentStatus === "Success" || fullOrderDetail.paymentStatus === "Paid" || fullOrderDetail.paymentStatus === "PAID"
                             ? "Đã thanh toán"

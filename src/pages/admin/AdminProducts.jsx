@@ -285,11 +285,10 @@ const AdminProducts = () => {
             <button
               key={tab.value}
               onClick={() => setActiveStatus(tab.value)}
-              className={`py-3 px-4 font-semibold text-sm border-b-2 transition-colors ${
-                activeStatus === tab.value
-                  ? "text-blue-600 border-blue-600"
-                  : "text-slate-600 border-transparent hover:text-slate-900"
-              }`}
+              className={`py-3 px-4 font-semibold text-sm border-b-2 transition-colors ${activeStatus === tab.value
+                ? "text-blue-600 border-blue-600"
+                : "text-slate-600 border-transparent hover:text-slate-900"
+                }`}
             >
               {tab.label}
               <span className="ml-2 inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold bg-slate-100">
@@ -605,22 +604,21 @@ const AdminProducts = () => {
                         Trạng thái:
                       </span>
                       <span
-                        className={`inline-flex items-center gap-2 px-4 py-2 text-sm font-bold rounded-full transition ${
-                          (selectedProduct.approvalStatus ||
-                            selectedProduct.ApprovalStatus) === "PENDING"
-                            ? "bg-amber-100 text-amber-700"
-                            : (selectedProduct.approvalStatus ||
-                                  selectedProduct.ApprovalStatus) === "APPROVED"
-                              ? "bg-green-100 text-green-700"
-                              : "bg-red-100 text-red-700"
-                        }`}
+                        className={`inline-flex items-center gap-2 px-4 py-2 text-sm font-bold rounded-full transition ${(selectedProduct.approvalStatus ||
+                          selectedProduct.ApprovalStatus) === "PENDING"
+                          ? "bg-amber-100 text-amber-700"
+                          : (selectedProduct.approvalStatus ||
+                            selectedProduct.ApprovalStatus) === "APPROVED"
+                            ? "bg-green-100 text-green-700"
+                            : "bg-red-100 text-red-700"
+                          }`}
                       >
                         <Clock size={16} />
                         {(selectedProduct.approvalStatus ||
                           selectedProduct.ApprovalStatus) === "PENDING"
                           ? "Chờ duyệt"
                           : (selectedProduct.approvalStatus ||
-                                selectedProduct.ApprovalStatus) === "APPROVED"
+                            selectedProduct.ApprovalStatus) === "APPROVED"
                             ? "Đã duyệt"
                             : "Bị từ chối"}
                       </span>
@@ -697,37 +695,37 @@ const AdminProducts = () => {
                   {/* Reject Reason */}
                   {(selectedProduct.rejectReason ||
                     selectedProduct.RejectReason) && (
-                    <div className="bg-red-50 p-5 rounded-xl border-2 border-red-200 space-y-2">
-                      <p className="text-xs font-bold text-red-700 uppercase tracking-wider flex items-center gap-2">
-                        ⚠️ Lý do từ chối
-                      </p>
-                      <p className="text-red-700 text-sm leading-relaxed">
-                        {selectedProduct.rejectReason ||
-                          selectedProduct.RejectReason}
-                      </p>
-                    </div>
-                  )}
+                      <div className="bg-red-50 p-5 rounded-xl border-2 border-red-200 space-y-2">
+                        <p className="text-xs font-bold text-red-700 uppercase tracking-wider flex items-center gap-2">
+                          ⚠️ Lý do từ chối
+                        </p>
+                        <p className="text-red-700 text-sm leading-relaxed">
+                          {selectedProduct.rejectReason ||
+                            selectedProduct.RejectReason}
+                        </p>
+                      </div>
+                    )}
 
                   {/* Reviewed Info */}
                   {(selectedProduct.reviewedAt ||
                     selectedProduct.ReviewedAt) && (
-                    <div className="space-y-2">
-                      <p className="text-xs font-bold text-slate-600 uppercase tracking-wider">
-                        ✅ Thông tin duyệt
-                      </p>
-                      <div className="bg-blue-50 p-4 rounded-lg border-2 border-blue-200">
-                        <p className="text-xs text-blue-700 font-medium mb-1">
-                          Ngày duyệt:
+                      <div className="space-y-2">
+                        <p className="text-xs font-bold text-slate-600 uppercase tracking-wider">
+                          ✅ Thông tin duyệt
                         </p>
-                        <p className="text-blue-900 font-semibold">
-                          {formatDate(
-                            selectedProduct.reviewedAt ||
+                        <div className="bg-blue-50 p-4 rounded-lg border-2 border-blue-200">
+                          <p className="text-xs text-blue-700 font-medium mb-1">
+                            Ngày duyệt:
+                          </p>
+                          <p className="text-blue-900 font-semibold">
+                            {formatDate(
+                              selectedProduct.reviewedAt ||
                               selectedProduct.ReviewedAt,
-                          )}
-                        </p>
+                            )}
+                          </p>
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    )}
 
                   {/* Variants */}
                   {selectedProduct.variants &&

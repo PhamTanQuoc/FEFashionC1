@@ -39,89 +39,13 @@ const HERO_IMAGES = [
   "https://dongphuchaianh.vn/wp-content/uploads/2022/03/trang-phuc-cong-so-cho-nam-vest-cao-cap.jpg"
 ];
 
-const offers = [
-  { id: 1, discount: "20%", code: "SMART20", desc: "Đơn tối thiểu 500k" },
-  { id: 2, discount: "50k", code: "FREESHIP", desc: "Đơn tối thiểu 0đ" },
-  { id: 3, discount: "100k", code: "AIWINTER", desc: "Đơn tối thiểu 1tr" },
-  { id: 4, discount: "15%", code: "HELLO2024", desc: "Đơn tối thiểu 200k" },
-];
+const offers = [];
 
-const mockProducts = [
-  {
-    id: 1,
-    name: "Áo Blazer Linen Phối Nút Cao Cấp",
-    category: "ÁO KHOÁC",
-    price: "850.000đ",
-    tag: "MỚI",
-    image:
-      "https://bizweb.dktcdn.net/thumb/1024x1024/100/451/244/products/442489741-436524615792119-6165782920369129994-n-1716440986212.jpg?v=1734515349447",
-  },
-  {
-    id: 2,
-    name: "Váy Lụa Maxi Họa Tiết Tropical",
-    category: "VÁY NỮ",
-    price: "1.250.000đ",
-    tag: "MỚI",
-    image:
-      "https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=600&q=85&auto=format&fit=crop",
-  },
-  {
-    id: 3,
-    name: "Quần Jeans Slimfit Co Giãn 4 Chiều",
-    category: "QUẦN NAM",
-    price: "690.000đ",
-    tag: "MỚI",
-    image:
-      "https://down-vn.img.susercontent.com/file/vn-11134207-820l4-mgncqvvh9w5o20",
-  },
-];
+const mockProducts = [];
 
-const mockPersonalized = [
-  {
-    id: 101,
-    name: "Bộ Vest Business Navy Sang Trọng",
-    category: "BỘ VEST",
-    price: "3.500.000đ",
-    tag: "AI Gợi ý",
-    image:
-      "https://5sfashion.vn/storage/upload/images/ckeditor/kscj4hNtTwdMy9rGqqN337htzMDQpVdYPqRvVUP2.jpg",
-  },
-  {
-    id: 102,
-    name: "Đầm Dự Tiệc Trễ Vai Đính Đá",
-    category: "VÁY NỮ",
-    price: "2.800.000đ",
-    tag: "AI Gợi ý",
-    image:
-      "https://product.hstatic.net/200000804863/product/leo01449_fcbd9d9ee0724e6f928beb6f04ca9414.jpg",
-  },
-  {
-    id: 103,
-    name: "Áo Hoodie Oversize Chữ Nổi",
-    category: "ÁO THUN",
-    price: "550.000đ",
-    tag: "AI Gợi ý",
-    image:
-      "https://images.unsplash.com/photo-1556821840-3a63f95609a7?w=600&q=85&auto=format&fit=crop",
-  },
-  {
-    id: 104,
-    name: "Kính Râm Aviator Chống Tia UV",
-    category: "KÍNH MẮT",
-    price: "450.000đ",
-    tag: "AI Gợi ý",
-    image:
-      "https://images.unsplash.com/photo-1572635196237-14b3f281503f?w=600&q=85&auto=format&fit=crop",
-  },
-];
+const mockPersonalized = [];
 
-const mockBrands = [
-  { id: 1, name: "Ananas Official", followers: "120K FOLLOWERS", rating: 4.9 },
-  { id: 2, name: "Coolmate Store", followers: "350K FOLLOWERS", rating: 4.8 },
-  { id: 3, name: "Marc Fashion", followers: "65K FOLLOWERS", rating: 4.7 },
-  { id: 4, name: "DirtyCoins", followers: "500K FOLLOWERS", rating: 4.9 },
-  { id: 5, name: "Ivy Moda", followers: "210K FOLLOWERS", rating: 4.8 },
-];
+const mockBrands = [];
 
 // CATEGORY_ITEMS is now dynamic, initialized with 'all'
 
@@ -1176,7 +1100,7 @@ export default function LandingPage() {
             </a>
           </div>
           <div className="products-grid">
-            {(newProducts.length ? newProducts : mockProducts).map(
+            {newProducts.map(
               (product) => (
                 <ProductCard
                   key={product.id}

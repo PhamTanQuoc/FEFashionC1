@@ -44,7 +44,7 @@ const Register = () => {
     };
 
     const handleGoogleLogin = () => {
-        const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
+        const baseUrl = import.meta.env.VITE_API_URL || 'http://3.26.98.220/api';
         window.location.href = `${baseUrl}/auth/google/login`;
     };
 

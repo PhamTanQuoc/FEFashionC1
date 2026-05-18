@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { io } from "socket.io-client";
 import notificationService from "../services/notificationService";
 
-const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || "http://localhost:8080";
+const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || "http://3.26.98.220";
 
 /**
  * Custom hook quản lý thông báo real-time

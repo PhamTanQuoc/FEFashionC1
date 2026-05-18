@@ -71,7 +71,7 @@ function Login() {
 
   // Đăng nhập bằng Google – chuyển hướng tới OAuth endpoint
   const handleGoogleLogin = () => {
-    const baseUrl = import.meta.env.VITE_API_URL || 'http://3.26.98.220/api';
+    const baseUrl = import.meta.env.VITE_API_URL || 'https://api.akqtv.io.vn/api';
     window.location.href = `${baseUrl}/auth/google/login`;
   };
 

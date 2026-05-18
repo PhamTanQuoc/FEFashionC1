@@ -1,7 +1,7 @@
 import axios from "axios";
 
 // Default API URL fallback if env vars are not set
-const BASE_URL = import.meta.env.VITE_API_URL || 'http://3.26.98.220/api';
+const BASE_URL = import.meta.env.VITE_API_URL || 'https://api.akqtv.io.vn/api';
 
 const api = axios.create({
   baseURL: BASE_URL,

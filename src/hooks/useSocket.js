@@ -1,7 +1,7 @@
 import { useEffect, useRef, useCallback } from "react";
 import { io } from "socket.io-client";
 
-const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || "http://3.26.98.220";
+const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || "https://api.akqtv.io.vn";
 
 /**
  * Custom hook quản lý kết nối Socket.IO

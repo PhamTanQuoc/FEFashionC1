@@ -10,7 +10,7 @@ import { FiMessageCircle } from 'react-icons/fi';
 import { useNotification } from '../../hooks/useNotification';
 import { jwtDecode } from 'jwt-decode';
 import api from '../../services/api';
-import InvoiceService from '../../services/InvoiceService';
+import InvoiceService from '../../services/invoiceService';
 import { CategoryService } from '../../services/CategoryService';
 import { ShopProductService } from '../../services/ShopProductService';
 import * as CartService from '../../services/CartService';

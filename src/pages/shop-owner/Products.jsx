@@ -105,6 +105,9 @@ const Products = () => {
     setLoading(true);
     try {
       const detail = await ShopProductService.getMyProductById(product.productId);
+      if (detail && detail.description) {
+        detail.description = detail.description.replace(/<!--image-colors-metadata:[\s\S]*?-->/g, "").trim();
+      }
       setProductToView(detail);
       setIsViewModalOpen(true);
     } catch (error) {
@@ -513,13 +516,12 @@ const Products = () => {
                         </div>
                         <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
                           <div
-                            className={`h-full rounded-full transition-all duration-500 ${
-                              product.stock < 10
+                            className={`h-full rounded-full transition-all duration-500 ${product.stock < 10
                                 ? "bg-rose-500"
                                 : product.stock < 50
                                   ? "bg-amber-500"
                                   : "bg-blue-500"
-                            }`}
+                              }`}
                             style={{
                               width: `${Math.min(product.stock, 100)}%`,
                             }}
@@ -530,11 +532,10 @@ const Products = () => {
                     <td className="px-6 py-5">
                       <div className="flex justify-center">
                         <span
-                          className={`px-3 py-1.5 rounded-xl text-[11px] font-bold uppercase tracking-wider ${
-                            product.isActive
+                          className={`px-3 py-1.5 rounded-xl text-[11px] font-bold uppercase tracking-wider ${product.isActive
                               ? "bg-emerald-50 text-emerald-600 ring-1 ring-emerald-100"
                               : "bg-slate-100 text-slate-500 ring-1 ring-slate-200"
-                          }`}
+                            }`}
                         >
                           {product.isActive ? "Đang hoạt động" : "Tạm ẩn"}
                         </span>
@@ -617,11 +618,10 @@ const Products = () => {
                   <button
                     key={page}
                     onClick={() => setCurrentPage(page)}
-                    className={`min-w-[40px] h-10 flex items-center justify-center rounded-xl text-sm font-bold transition-all ${
-                      page === currentPage
+                    className={`min-w-[40px] h-10 flex items-center justify-center rounded-xl text-sm font-bold transition-all ${page === currentPage
                         ? "bg-blue-600 text-white shadow-lg shadow-blue-200 scale-110"
                         : "text-slate-500 hover:bg-slate-50 hover:text-blue-600"
-                    }`}
+                      }`}
                   >
                     {page}
                   </button>
@@ -694,8 +694,8 @@ const Products = () => {
                       productToView.images && productToView.images.length > 0
                         ? (typeof productToView.images[0] === 'string' ? productToView.images[0] : productToView.images[0].imageUrl)
                         : productToView.image ||
-                          productToView.thumbnail ||
-                          "https://via.placeholder.com/300"
+                        productToView.thumbnail ||
+                        "https://via.placeholder.com/300"
                     }
                     alt={productToView.name}
                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
@@ -707,11 +707,10 @@ const Products = () => {
                   <div>
                     <div className="flex items-center gap-2 mb-2">
                       <span
-                        className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                          productToView.isActive
+                        className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${productToView.isActive
                             ? "bg-emerald-50 text-emerald-600 ring-1 ring-emerald-100"
                             : "bg-slate-50 text-slate-500 ring-1 ring-slate-200"
-                        }`}
+                          }`}
                       >
                         {productToView.isActive ? "Đang hoạt động" : "Tạm ẩn"}
                       </span>
@@ -756,9 +755,9 @@ const Products = () => {
                     <p className="text-sm font-bold text-slate-700">
                       {productToView.variants
                         ? productToView.variants.reduce(
-                            (sum, v) => sum + v.stock,
-                            0,
-                          )
+                          (sum, v) => sum + v.stock,
+                          0,
+                        )
                         : 0}{" "}
                       sản phẩm
                     </p>

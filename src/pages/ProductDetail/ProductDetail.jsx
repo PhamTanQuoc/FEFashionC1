@@ -39,6 +39,66 @@ import { FiMessageCircle } from "react-icons/fi";
 import "../LandingPage/LandingPage.css";
 import "./ProductDetail.css";
 
+// Helper to extract color from S3 image URL
+const extractColorFromUrl = (url) => {
+  if (!url) return "";
+  const filename = url.substring(url.lastIndexOf("/") + 1);
+  const match = filename.match(/color-([^-]+)-/);
+  if (match) {
+    let result = match[1];
+    while (result.includes("%")) {
+      try {
+        const decoded = decodeURIComponent(result);
+        if (decoded === result) break;
+        result = decoded;
+      } catch {
+        break;
+      }
+    }
+    try {
+      const bytes = new Uint8Array(result.split("").map(c => c.charCodeAt(0)));
+      const decoded = new TextDecoder("utf-8").decode(bytes);
+      if (decoded && decoded !== result) {
+        return decoded;
+      }
+    } catch (e) {
+      console.warn("Failed to decode mojibake:", e);
+    }
+    return result;
+  }
+  return "";
+};
+
+// Helper to sanitize color name to accentless lowercase string
+const cleanColorName = (str) => {
+  if (!str) return "";
+  return str
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/đ/g, "d")
+    .replace(/Đ/g, "D")
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, "");
+};
+
+// Helper to read image-to-color mapping in description field
+const parseDescriptionMetadata = (description) => {
+  if (!description) return { cleanDescription: "", imageColors: {} };
+  const regex = /<!--image-colors-metadata:([\s\S]*?)-->/;
+  const match = description.match(regex);
+  if (match) {
+    try {
+      const imageColors = JSON.parse(match[1]);
+      const cleanDescription = description.replace(regex, "").trim();
+      return { cleanDescription, imageColors };
+    } catch (e) {
+      console.error("Failed to parse image colors metadata", e);
+    }
+  }
+  return { cleanDescription: description, imageColors: {} };
+};
+
 // Reuse user label logic
 function getUserDisplayNameFromToken() {
   const token = localStorage.getItem("token");
@@ -593,6 +653,9 @@ export default function ProductDetail() {
         const data = res?.data || res;
 
         if (data) {
+          const parsed = parseDescriptionMetadata(data.description || "");
+          data.description = parsed.cleanDescription;
+          data.imageColorsMetadata = parsed.imageColors;
           setProduct(data);
           const initialImage = data.thumbnail ||
             (data.images && data.images.length > 0
@@ -707,6 +770,29 @@ export default function ProductDetail() {
     console.log("🔍 findImageByColor - allImages:", allImages);
     if (!color || !allImages.length) return null;
 
+    // Cách 0: Kiểm tra description metadata (Độ ưu tiên cao nhất, gán màu trực tiếp FE)
+    if (product && product.imageColorsMetadata) {
+      const matchUrl = Object.keys(product.imageColorsMetadata).find(
+        (url) => cleanColorName(product.imageColorsMetadata[url]) === cleanColorName(color)
+      );
+      if (matchUrl && allImages.includes(matchUrl)) {
+        console.log("🔍 findImageByColor - matched image by description metadata:", matchUrl);
+        return matchUrl;
+      }
+    }
+
+    // Cách 0.5: Khớp chính xác theo prefix màu trong URL ảnh (Giải quyết thứ tự lộn xộn do tùy chỉnh gán màu)
+    const exactMatched = allImages.find((img) => {
+      const imgColor = extractColorFromUrl(img);
+      if (!imgColor) return false;
+      return cleanColorName(imgColor) === cleanColorName(color);
+    });
+
+    if (exactMatched) {
+      console.log("🔍 findImageByColor - matched image by exact prefix color:", exactMatched);
+      return exactMatched;
+    }
+
     const removeTones = (str) => {
       if (!str) return "";
       return str
@@ -793,6 +879,51 @@ export default function ProductDetail() {
 
   const handleSelectImage = (img) => {
     setSelectedImage(img);
+
+    // Cách 0: Kiểm tra description metadata (Độ ưu tiên cao nhất, gán màu trực tiếp FE)
+    if (product && product.imageColorsMetadata && product.imageColorsMetadata[img]) {
+      const metaColor = product.imageColorsMetadata[img];
+      // Tìm trong màu sắc của size hiện tại
+      const matchedColor = colorsForSelectedSize.find(
+        (c) => cleanColorName(c) === cleanColorName(metaColor)
+      );
+      if (matchedColor) {
+        setSelectedColor(matchedColor);
+        return;
+      }
+      // Nếu size hiện tại không có màu này nhưng sản phẩm có biến thể màu này, vẫn chọn màu đó
+      const allProductColors = [...new Set(product.variants.map((v) => v.color).filter(Boolean))];
+      const matchedAnyColor = allProductColors.find(
+        (c) => cleanColorName(c) === cleanColorName(metaColor)
+      );
+      if (matchedAnyColor) {
+        setSelectedColor(matchedAnyColor);
+        return;
+      }
+    }
+
+    // Cách 0.5: Khớp chính xác ngược lại theo prefix màu trong URL ảnh được click
+    const exactColor = extractColorFromUrl(img);
+    if (exactColor) {
+      // Tìm trong màu sắc của size hiện tại
+      const matchedColor = colorsForSelectedSize.find(
+        (c) => cleanColorName(c) === cleanColorName(exactColor)
+      );
+      if (matchedColor) {
+        setSelectedColor(matchedColor);
+        return;
+      }
+      // Nếu size hiện tại không có màu này nhưng sản phẩm có biến thể màu này, vẫn chọn màu đó
+      const allProductColors = [...new Set(product.variants.map((v) => v.color).filter(Boolean))];
+      const matchedAnyColor = allProductColors.find(
+        (c) => cleanColorName(c) === cleanColorName(exactColor)
+      );
+      if (matchedAnyColor) {
+        setSelectedColor(matchedAnyColor);
+        return;
+      }
+    }
+
     if (!colorsForSelectedSize.length) return;
 
     const removeTones = (str) => {

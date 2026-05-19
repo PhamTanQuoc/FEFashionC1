@@ -702,6 +702,156 @@ export default function ProductDetail() {
     setSelectedImage(allImages[nextIndex]);
   };
 
+  const findImageByColor = (color) => {
+    console.log("🔍 findImageByColor - color:", color);
+    console.log("🔍 findImageByColor - allImages:", allImages);
+    if (!color || !allImages.length) return null;
+
+    const removeTones = (str) => {
+      if (!str) return "";
+      return str
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/đ/g, "d")
+        .replace(/Đ/g, "D")
+        .toLowerCase()
+        .trim();
+    };
+
+    const colorTranslations = {
+      "den": ["den", "black"],
+      "trang": ["trang", "white"],
+      "do": ["do", "red"],
+      "vang": ["vang", "yellow"],
+      "xanh la": ["xanhla", "green"],
+      "xanh duong": ["xanhduong", "blue"],
+      "xanh bien": ["xanhbien", "blue"],
+      "xam": ["xam", "gray", "grey"],
+      "hong": ["hong", "pink"],
+      "cam": ["cam", "orange"],
+      "nau": ["nau", "brown"],
+      "tim": ["tim", "purple"],
+    };
+
+    const cleanColor = removeTones(color);
+    const keywords = [cleanColor];
+    if (colorTranslations[cleanColor]) {
+      keywords.push(...colorTranslations[cleanColor]);
+    }
+    console.log("🔍 findImageByColor - keywords:", keywords);
+
+    // Cách 1: Tìm theo từ khóa trong URL ảnh
+    const matched = allImages.find((img) => {
+      const lowerImg = img.toLowerCase();
+      const isMatch = keywords.some((kw) => lowerImg.includes(kw));
+      console.log(`  Checking img: ${lowerImg} against keywords -> Match: ${isMatch}`);
+      return isMatch;
+    });
+
+    if (matched) {
+      console.log("🔍 findImageByColor - matched image by keyword:", matched);
+      return matched;
+    }
+
+    // Cách 2: Khớp theo index (nếu ảnh lưu trên S3 có tên random/UUID)
+    if (product && product.variants) {
+      const uniqueColors = [...new Set(product.variants.map((v) => v.color).filter(Boolean))];
+      const colorIndex = uniqueColors.indexOf(color);
+      if (colorIndex !== -1 && allImages[colorIndex]) {
+        console.log(`🔍 findImageByColor - matched image by index [${colorIndex}]:`, allImages[colorIndex]);
+        return allImages[colorIndex];
+      }
+    }
+
+    console.log("🔍 findImageByColor - no match found");
+    return null;
+  };
+
+  const handleColorChange = (color) => {
+    setSelectedColor(color);
+    const matchedImage = findImageByColor(color);
+    if (matchedImage) {
+      setSelectedImage(matchedImage);
+    }
+  };
+
+  const handleColorHover = (color) => {
+    const matchedImage = findImageByColor(color);
+    if (matchedImage) {
+      setSelectedImage(matchedImage);
+    }
+  };
+
+  const handleColorLeave = () => {
+    if (selectedColor) {
+      const matchedImage = findImageByColor(selectedColor);
+      if (matchedImage) {
+        setSelectedImage(matchedImage);
+      }
+    }
+  };
+
+  const handleSelectImage = (img) => {
+    setSelectedImage(img);
+    if (!colorsForSelectedSize.length) return;
+
+    const removeTones = (str) => {
+      if (!str) return "";
+      return str
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/đ/g, "d")
+        .replace(/Đ/g, "D")
+        .toLowerCase()
+        .trim();
+    };
+
+    const colorTranslations = {
+      "den": ["den", "black"],
+      "trang": ["trang", "white"],
+      "do": ["do", "red"],
+      "vang": ["vang", "yellow"],
+      "xanh la": ["xanhla", "green"],
+      "xanh duong": ["xanhduong", "blue"],
+      "xanh bien": ["xanhbien", "blue"],
+      "xam": ["xam", "gray", "grey"],
+      "hong": ["hong", "pink"],
+      "cam": ["cam", "orange"],
+      "nau": ["nau", "brown"],
+      "tim": ["tim", "purple"],
+    };
+
+    const lowerImg = img.toLowerCase();
+
+    // Cách 1: Tìm theo từ khóa trong tên ảnh
+    const matchedColor = colorsForSelectedSize.find((color) => {
+      const cleanColor = removeTones(color);
+      const keywords = [cleanColor];
+      if (colorTranslations[cleanColor]) {
+        keywords.push(...colorTranslations[cleanColor]);
+      }
+      return keywords.some((kw) => lowerImg.includes(kw));
+    });
+
+    if (matchedColor) {
+      setSelectedColor(matchedColor);
+      return;
+    }
+
+    // Cách 2: Khớp ngược lại theo index của ảnh trong allImages
+    const imgIndex = allImages.indexOf(img);
+    if (imgIndex !== -1) {
+      if (colorsForSelectedSize[imgIndex]) {
+        setSelectedColor(colorsForSelectedSize[imgIndex]);
+      } else {
+        const uniqueColors = [...new Set(product.variants.map((v) => v.color).filter(Boolean))];
+        if (uniqueColors[imgIndex]) {
+          setSelectedColor(uniqueColors[imgIndex]);
+        }
+      }
+    }
+  };
+
   const handleLogout = () => {
 
     localStorage.removeItem("token");
@@ -778,7 +928,10 @@ export default function ProductDetail() {
 
     const productId = product.id;
     const thumbnailUrl =
-      product.thumbnail || (product.images && product.images.length > 0 ? (typeof product.images[0] === 'string' ? product.images[0] : product.images[0].imageUrl) : "") || "";
+      selectedImage ||
+      product.thumbnail ||
+      (product.images && product.images.length > 0 ? (typeof product.images[0] === 'string' ? product.images[0] : product.images[0].imageUrl) : "") ||
+      "";
     const productName = product.name || "Sản phẩm";
     const price = product.price || 0;
 
@@ -942,7 +1095,7 @@ export default function ProductDetail() {
                     <div
                       key={idx}
                       className={`pd-thumb-item ${selectedImage === img ? "active" : ""}`}
-                      onClick={() => setSelectedImage(img)}
+                      onClick={() => handleSelectImage(img)}
                     >
                       <img src={img} alt={`Xem thêm ${idx}`} />
                     </div>
@@ -1033,7 +1186,7 @@ export default function ProductDetail() {
                           const firstColor = product.variants.find(
                             (v) => v.size === size,
                           )?.color;
-                          if (firstColor) setSelectedColor(firstColor);
+                          if (firstColor) handleColorChange(firstColor);
                         }}
                       >
                         {size}
@@ -1051,7 +1204,9 @@ export default function ProductDetail() {
                         <button
                           key={color}
                           className={`pd-color-chip ${selectedColor === color ? "active" : ""}`}
-                          onClick={() => setSelectedColor(color)}
+                          onClick={() => handleColorChange(color)}
+                          onMouseEnter={() => handleColorHover(color)}
+                          onMouseLeave={() => handleColorLeave()}
                         >
                           {color}
                         </button>

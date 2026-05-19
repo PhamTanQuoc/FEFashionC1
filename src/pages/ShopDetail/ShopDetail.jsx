@@ -1,123 +1,152 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
-import { toast } from 'react-hot-toast';
+import React, { useState, useEffect, useMemo, useRef } from "react";
+import { useParams, Link, useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
 import {
-    FaStar,
-    FaBox,
-    FaUsers,
-    FaCalendarAlt,
+    FaShoppingCart,
     FaSearch,
-    FaUserCircle,
-    FaSignOutAlt,
+    FaBell,
+    FaChevronLeft,
+    FaChevronRight,
+    FaStar,
+    FaHeart,
+    FaShareAlt,
+    FaShieldAlt,
+    FaTruck,
+    FaUndo,
     FaFacebookF,
     FaInstagram,
     FaYoutube,
-    FaMapMarkerAlt,
-    FaPhoneAlt,
-    FaTruck,
-    FaFilter,
-    FaPlus,
-    FaCheckCircle,
-    FaShoppingCart,
+    FaUserCircle,
+    FaBox,
+    FaSignOutAlt,
     FaUser,
-    FaBell,
-    FaTrash
-} from 'react-icons/fa';
-import { FiMessageCircle } from 'react-icons/fi';
-import { useNotification } from '../../hooks/useNotification';
-import api from '../../services/api';
-import { ShopCuahangService } from '../../services/ShopCuahangService';
-import { ShopProductService } from '../../services/ShopProductService';
-import { CategoryService } from '../../services/CategoryService';
-import chatService from '../../services/chatService';
-// ProductCard component merged from common component
-function ProductCard({ product }) {
-    if (!product) return null;
+    FaCheck,
+    FaTrash,
+} from "react-icons/fa";
+import { FaFlag, FaExclamationTriangle, FaTimes } from "react-icons/fa";
+import { jwtDecode } from "jwt-decode";
+import { useNotification } from "../../hooks/useNotification";
+import { adminService } from "../../services/adminService";
+import api from "../../services/api";
+import { ShopProductService } from "../../services/ShopProductService";
+import { ShopCuahangService } from "../../services/ShopCuahangService";
+import * as ProductDetailService from "../../services/ProductDetailService";
+import { CategoryService } from "../../services/CategoryService";
+import * as CartService from "../../services/CartService";
+import chatService from "../../services/chatService";
+import { FiMessageCircle } from "react-icons/fi";
 
-    const id = product.id || product.ProductId || product.productId;
-    const name = product.name || product.ProductName || product.productName || 'Sản phẩm';
-    const image = product.image || product.thumbnail || product.Thumbnail || "https://via.placeholder.com/300";
-    const price = product.price || product.Price || 0;
+import "../LandingPage/LandingPage.css";
+import "./ProductDetail.css";
 
-    return (
-        <article className="product-card">
-            <Link to={`/products/${id}`} className="product-card-link">
-                <div className="product-image-container">
-                    <img
-                        src={image}
-                        alt={name}
-                        className="product-card-image"
-                        onError={(e) => { e.target.src = "https://via.placeholder.com/300" }}
-                    />
-                </div>
-                <div className="product-card-body">
-                    <h3 className="product-card-name">
-                        {name}
-                    </h3>
-                    <div className="product-card-price">
-                        {Number(price).toLocaleString('vi-VN')} đ
-                    </div>
-                </div>
-            </Link>
-        </article>
-    );
+// Reuse user label logic
+function getUserDisplayNameFromToken() {
+    const token = localStorage.getItem("token");
+    if (!token) return null;
+    try {
+        const payload = jwtDecode(token);
+        return (
+            payload.email ||
+            payload.name ||
+            payload.fullName ||
+            payload.username ||
+            payload.sub ||
+            null
+        );
+    } catch {
+        return null;
+    }
 }
 
-import '../LandingPage/LandingPage.css';
-import './ShopDetail.css';
-
-// Reusing PageHeader and PageFooter directly for consistency
 function PageHeader({ userLabel, userAvatar, dbCategories, onLogout }) {
     const navigate = useNavigate();
     const [searchTerm, setSearchTerm] = useState("");
     const [suggestions, setSuggestions] = useState([]);
     const [showSuggestions, setShowSuggestions] = useState(false);
+    const [cartCount, setCartCount] = useState(0);
     const searchRef = useRef(null);
 
     const [showNotifPanel, setShowNotifPanel] = useState(false);
     const notifPanelRef = useRef(null);
     const {
-      unreadCount,
-      notifications,
-      loading: notifLoading,
-      fetchNotifications,
-      markAsRead,
-      markAllAsRead,
-      deleteNotification,
-      loadMore,
-      nextCursor,
+        unreadCount,
+        notifications,
+        loading: notifLoading,
+        fetchNotifications,
+        markAsRead,
+        markAllAsRead,
+        deleteNotification,
+        loadMore,
+        nextCursor,
     } = useNotification();
 
     const handleNotificationClick = async (n) => {
-      if (!n.IsRead) {
-        await markAsRead(n.NotificationId);
-      }
-      setShowNotifPanel(false);
-      const textToSearch = `${n.Title || ''} ${n.Content || ''}`;
-      const orderMatch = textToSearch.match(/#(\d+)/) || textToSearch.match(/ORD-(\d+)/i);
-      if (orderMatch && orderMatch[1]) {
-        navigate(`/manage/invoice-detail/${orderMatch[1]}`);
-      } else {
-        navigate('/manage/Manageinvoice');
-      }
+        if (!n.IsRead) {
+            await markAsRead(n.NotificationId);
+        }
+        setShowNotifPanel(false);
+        const textToSearch = `${n.Title || ''} ${n.Content || ''}`;
+        const orderMatch = textToSearch.match(/#(\d+)/) || textToSearch.match(/ORD-(\d+)/i);
+        if (orderMatch && orderMatch[1]) {
+            navigate(`/manage/invoice-detail/${orderMatch[1]}`);
+        } else {
+            navigate('/manage/Manageinvoice');
+        }
     };
 
     // Đóng notification panel khi click ra ngoài
     useEffect(() => {
-      const handleClickOutsideNotif = (e) => {
-        if (notifPanelRef.current && !notifPanelRef.current.contains(e.target)) {
-          setShowNotifPanel(false);
-        }
-      };
-      document.addEventListener('mousedown', handleClickOutsideNotif);
-      return () => document.removeEventListener('mousedown', handleClickOutsideNotif);
+        const handleClickOutsideNotif = (e) => {
+            if (notifPanelRef.current && !notifPanelRef.current.contains(e.target)) {
+                setShowNotifPanel(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutsideNotif);
+        return () => document.removeEventListener('mousedown', handleClickOutsideNotif);
     }, []);
 
+    // Hàm tải số lượng giỏ hàng
+    const loadCartCount = async () => {
+        try {
+            const res = await CartService.getCart();
+            const data = res.data;
+            let count = 0;
+            if (Array.isArray(data)) {
+                count = data.length;
+            } else if (data && typeof data === "object") {
+                const items = data.cartItems || data.items || data.cart?.cartItems || (data.shops ? data.shops.flatMap(s => s.items || []) : []);
+                count = Array.isArray(items) ? items.length : 0;
+            }
+            setCartCount(count);
+        } catch (err) {
+            const localCart = JSON.parse(localStorage.getItem("local_cart") || "[]");
+            setCartCount(Array.isArray(localCart) ? localCart.length : 0);
+        }
+    };
 
+    useEffect(() => {
+        loadCartCount();
+        window.addEventListener('cart-updated', loadCartCount);
+        window.addEventListener('storage', loadCartCount);
+        return () => {
+            window.removeEventListener('cart-updated', loadCartCount);
+            window.removeEventListener('storage', loadCartCount);
+        };
+    }, []);
 
-    const handleNavClick = (catId) => {
-        if (catId === "all") navigate("/");
-        else navigate(`/category/${catId}`);
+    const handleNavClick = (categoryId) => {
+        if (categoryId === "all") {
+            navigate("/", { state: { category: "all" } });
+        } else {
+            navigate("/", { state: { category: categoryId } });
+        }
+    };
+
+    const handleSearch = (e) => {
+        if (e.key === "Enter") {
+            setShowSuggestions(false);
+            navigate(`/search?keyword=${encodeURIComponent(searchTerm)}`);
+        }
     };
 
     const handleSelectSuggestion = (keyword) => {
@@ -179,15 +208,7 @@ function PageHeader({ userLabel, userAvatar, dbCategories, onLogout }) {
                             onFocus={() => {
                                 if (suggestions.length > 0) setShowSuggestions(true);
                             }}
-                            onKeyDown={(e) => {
-                                if (e.key === "Enter") {
-                                    e.preventDefault();
-                                    setShowSuggestions(false);
-                                    if (searchTerm.trim()) {
-                                        navigate(`/search?keyword=${encodeURIComponent(searchTerm)}`);
-                                    }
-                                }
-                            }}
+                            onKeyDown={handleSearch}
                         />
                         {showSuggestions && suggestions.length > 0 && (
                             <div className="search-suggestions-dropdown">
@@ -207,123 +228,177 @@ function PageHeader({ userLabel, userAvatar, dbCategories, onLogout }) {
                     <div className="user-actions">
                         <Link to="/cart" className="icon-link" aria-label="Giỏ hàng">
                             <FaShoppingCart />
+                            {cartCount > 0 && <span className="cart-quantity-badge">{cartCount}</span>}
                         </Link>
                         <Link to="/chat" className="icon-link" aria-label="Tin nhắn">
                             <FiMessageCircle />
                         </Link>
                         {userLabel && (
-                          <div className="notif-bell-wrapper" ref={notifPanelRef}>
-                            <button
-                              className="icon-link"
-                              aria-label="Thông báo"
-                              onClick={() => {
-                                setShowNotifPanel((prev) => {
-                                  if (!prev) fetchNotifications();
-                                  return !prev;
-                                });
-                              }}
-                              type="button"
-                              style={{ background: "none", border: "none", cursor: "pointer", position: "relative", padding: "8px", display: "flex", alignItems: "center", justifyContent: "center" }}
-                            >
-                              <FaBell />
-                              {unreadCount > 0 && (
-                                <span className="cart-quantity-badge">{unreadCount > 9 ? '9+' : unreadCount}</span>
-                              )}
-                            </button>
-                            {showNotifPanel && (
-                              <div className="notif-dropdown-panel">
-                                <div className="notif-panel-header">
-                                  <h4>Thông báo</h4>
-                                  {unreadCount > 0 && (
-                                    <button type="button" className="notif-mark-all" onClick={markAllAsRead}>Đánh dấu tất cả đã đọc</button>
-                                  )}
-                                </div>
-                                <div className="notif-panel-list">
-                                  {notifications.length === 0 && !notifLoading && (
-                                    <div className="notif-empty">Chưa có thông báo nào</div>
-                                  )}
-                                  {notifications.map((n) => (
-                                    <div
-                                      key={n.NotificationId}
-                                      className={`notif-item ${!n.IsRead ? 'notif-unread' : ''}`}
-                                      onClick={() => handleNotificationClick(n)}
-                                    >
-                                      <div className="notif-item-content">
-                                        <div className="notif-item-title">{n.Title}</div>
-                                        <div className="notif-item-body">{n.Content}</div>
-                                        <div className="notif-item-time">
-                                          {n.CreatedAt ? new Date(typeof n.CreatedAt === 'string' ? n.CreatedAt.replace('Z', '') : n.CreatedAt).toLocaleString('vi-VN') : ''}
-                                          {!n.IsRead && (
-                                            <button
-                                              type="button"
-                                              className="notif-item-read-btn"
-                                              onClick={(e) => {
-                                                e.stopPropagation();
-                                                markAsRead(n.NotificationId);
-                                              }}
-                                            >
-                                              Đánh dấu đã đọc
-                                            </button>
-                                          )}
+                            <div className="notif-bell-wrapper" ref={notifPanelRef}>
+                                <button
+                                    className="icon-link"
+                                    aria-label="Thông báo"
+                                    onClick={() => {
+                                        setShowNotifPanel((prev) => {
+                                            if (!prev) fetchNotifications();
+                                            return !prev;
+                                        });
+                                    }}
+                                    type="button"
+                                    style={{ background: "none", border: "none", cursor: "pointer", position: "relative", padding: "8px", display: "flex", alignItems: "center", justifyContent: "center" }}
+                                >
+                                    <FaBell />
+                                    {unreadCount > 0 && (
+                                        <span className="cart-quantity-badge">{unreadCount > 9 ? '9+' : unreadCount}</span>
+                                    )}
+                                </button>
+                                {showNotifPanel && (
+                                    <div className="notif-dropdown-panel">
+                                        <div className="notif-panel-header">
+                                            <h4>Thông báo</h4>
+                                            {unreadCount > 0 && (
+                                                <button type="button" className="notif-mark-all" onClick={markAllAsRead}>Đánh dấu tất cả đã đọc</button>
+                                            )}
                                         </div>
-                                      </div>
-                                      <button
-                                        type="button"
-                                        className="notif-item-delete"
-                                        onClick={(e) => { e.stopPropagation(); deleteNotification(n.NotificationId); }}
-                                        title="Xóa"
-                                      >
-                                        <FaTrash />
-                                      </button>
+                                        <div className="notif-panel-list">
+                                            {notifications.length === 0 && !notifLoading && (
+                                                <div className="notif-empty">Chưa có thông báo nào</div>
+                                            )}
+                                            {notifications.map((n) => (
+                                                <div
+                                                    key={n.NotificationId}
+                                                    className={`notif-item ${!n.IsRead ? 'notif-unread' : ''}`}
+                                                    onClick={() => handleNotificationClick(n)}
+                                                >
+                                                    <div className="notif-item-content">
+                                                        <div className="notif-item-title">{n.Title}</div>
+                                                        <div className="notif-item-body">{n.Content}</div>
+                                                        <div className="notif-item-time">
+                                                            {n.CreatedAt ? new Date(typeof n.CreatedAt === 'string' ? n.CreatedAt.replace('Z', '') : n.CreatedAt).toLocaleString('vi-VN') : ''}
+                                                            {!n.IsRead && (
+                                                                <button
+                                                                    type="button"
+                                                                    className="notif-item-read-btn"
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        markAsRead(n.NotificationId);
+                                                                    }}
+                                                                >
+                                                                    Đánh dấu đã đọc
+                                                                </button>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                    <button
+                                                        type="button"
+                                                        className="notif-item-delete"
+                                                        onClick={(e) => { e.stopPropagation(); deleteNotification(n.NotificationId); }}
+                                                        title="Xóa"
+                                                    >
+                                                        <FaTrash />
+                                                    </button>
+                                                </div>
+                                            ))}
+                                            {notifLoading && <div className="notif-loading">Đang tải...</div>}
+                                            {nextCursor && !notifLoading && (
+                                                <button type="button" className="notif-load-more" onClick={loadMore}>Xem thêm</button>
+                                            )}
+                                        </div>
                                     </div>
-                                  ))}
-                                  {notifLoading && <div className="notif-loading">Đang tải...</div>}
-                                  {nextCursor && !notifLoading && (
-                                    <button type="button" className="notif-load-more" onClick={loadMore}>Xem thêm</button>
-                                  )}
-                                </div>
-                              </div>
-                            )}
-                          </div>
+                                )}
+                            </div>
                         )}
                         {userLabel ? (
                             <div className="user-profile-wrapper">
                                 <button type="button" className="user-profile-btn">
                                     {userAvatar ? (
-                                        <img src={userAvatar} alt="Avatar" style={{ width: "24px", height: "24px", borderRadius: "50%", marginRight: "8px", objectFit: "cover" }} />
+                                        <img
+                                            src={userAvatar}
+                                            alt="Avatar"
+                                            style={{ width: "24px", height: "24px", borderRadius: "50%", marginRight: "8px", objectFit: "cover" }}
+                                        />
                                     ) : (
-                                        <FaUserCircle style={{ fontSize: "20px", color: "var(--lp-accent)" }} />
+                                        <FaUserCircle
+                                            style={{ fontSize: "20px", color: "var(--lp-accent)" }}
+                                        />
                                     )}
                                     <span className="user-profile">{userLabel}</span>
                                 </button>
                                 <div className="profile-dropdown">
-                                    <Link to="/manage/Manageinvoice" className="profile-dropdown-item"><FaBox /> Đơn mua</Link>
-                                    <Link to="/user/UserProfile" className="profile-dropdown-item"><FaUser /> Trang cá nhân</Link>
-                                    {localStorage.getItem("userRole")?.toLowerCase().includes("shop") && (
-                                        <Link to="/shop-owner/store" className="profile-dropdown-item" style={{ color: "var(--lp-accent)" }}>
-                                            <FaBox /> Kênh Shop
-                                        </Link>
-                                    )}
-                                    <button type="button" className="profile-dropdown-item logout" onClick={onLogout}>
+                                    <Link
+                                        to="/manage/Manageinvoice"
+                                        className="profile-dropdown-item"
+                                    >
+                                        <FaBox /> Đơn mua
+                                    </Link>
+                                    <Link
+                                        to="/user/UserProfile"
+                                        className="profile-dropdown-item"
+                                    >
+                                        <FaUser /> Trang cá nhân
+                                    </Link>
+                                    {localStorage
+                                        .getItem("userRole")
+                                        ?.toLowerCase()
+                                        .includes("shop") && (
+                                            <Link
+                                                to="/shop-owner/store"
+                                                className="profile-dropdown-item"
+                                                style={{ color: "var(--lp-accent)" }}
+                                            >
+                                                <FaBox /> Kênh Shop{" "}
+                                                <span
+                                                    style={{
+                                                        fontSize: "10px",
+                                                        marginLeft: "auto",
+                                                        background: "var(--lp-accent)",
+                                                        color: "white",
+                                                        padding: "2px 6px",
+                                                        borderRadius: "10px",
+                                                    }}
+                                                >
+                                                    PRO
+                                                </span>
+                                            </Link>
+                                        )}
+                                    <button
+                                        type="button"
+                                        className="profile-dropdown-item logout"
+                                        onClick={onLogout}
+                                    >
                                         <FaSignOutAlt /> Đăng xuất
                                     </button>
                                 </div>
                             </div>
                         ) : (
                             <div className="auth-links">
-                                <Link to="/login" className="link-muted">Đăng nhập</Link>
-                                <Link to="/register" className="btn-primary btn-header-sm">Đăng ký</Link>
+                                <Link to="/login" className="link-muted">
+                                    Đăng nhập
+                                </Link>
+                                <Link to="/register" className="btn-primary btn-header-sm">
+                                    Đăng ký
+                                </Link>
                             </div>
                         )}
                     </div>
                 </div>
             </header>
+
             <nav className="main-nav" aria-label="Danh mục chính">
                 <div className="container nav-links">
-                    <span onClick={() => handleNavClick("all")} style={{ cursor: "pointer" }}>TẤT CẢ DANH MỤC</span>
+                    <span
+                        onClick={() => handleNavClick("all")}
+                        style={{ cursor: "pointer" }}
+                    >
+                        TẤT CẢ DANH MỤC
+                    </span>
                     {dbCategories.map((cat) => (
-                        <span key={cat.categoryId || cat.id} onClick={() => handleNavClick(cat.categoryId || cat.id)} style={{ cursor: "pointer" }}>
-                            {cat.categoryName || cat.name}
+                        <span
+                            key={cat.id}
+                            onClick={() => handleNavClick(cat.id)}
+                            style={{ cursor: "pointer" }}
+                        >
+                            {cat.name}
                         </span>
                     ))}
                     <Link
@@ -336,10 +411,12 @@ function PageHeader({ userLabel, userAvatar, dbCategories, onLogout }) {
                             padding: '6px 16px',
                             borderRadius: '20px',
                             textDecoration: 'none',
+                            boxShadow: '0 4px 6px rgba(37, 99, 235, 0.2)',
                             fontSize: '13px',
-                            textTransform: 'uppercase',
-                            boxShadow: "0 4px 6px rgba(37, 99, 235, 0.2)"
+                            letterSpacing: '0.5px',
+                            textTransform: 'uppercase'
                         }}
+                        className="hover:opacity-90 transition-opacity"
                     >
                         Trở thành Người bán hàng
                     </Link>
@@ -360,25 +437,58 @@ function PageFooter() {
                 <div>
                     <h3 className="lp-footer-title">Hỗ trợ</h3>
                     <ul className="lp-footer-links">
-                        <li><Link to="/login">Tài khoản</Link></li>
-                        <li><a href="/">Theo dõi đơn hàng</a></li>
-                        <li><a href="/">Đổi trả &amp; bảo hành</a></li>
+                        <li>
+                            <Link to="/login">Tài khoản</Link>
+                        </li>
+                        <li>
+                            <a href="#main-content">Theo dõi đơn hàng</a>
+                        </li>
+                        <li>
+                            <a href="#main-content">Đổi trả &amp; bảo hành</a>
+                        </li>
                     </ul>
                 </div>
                 <div>
                     <h3 className="lp-footer-title">Công ty</h3>
                     <ul className="lp-footer-links">
-                        <li><a href="/">Về chúng tôi</a></li>
-                        <li><a href="/">Tuyển dụng</a></li>
-                        <li><a href="/">Điều khoản</a></li>
+                        <li>
+                            <a href="#main-content">Về chúng tôi</a>
+                        </li>
+                        <li>
+                            <a href="#main-content">Tuyển dụng</a>
+                        </li>
+                        <li>
+                            <a href="#main-content">Điều khoản</a>
+                        </li>
                     </ul>
                 </div>
                 <div className="lp-footer-social">
                     <h3 className="lp-footer-title">Kết nối</h3>
                     <div className="lp-social-icons">
-                        <a href="https://facebook.com" target="_blank" rel="noreferrer" aria-label="Facebook"><FaFacebookF /></a>
-                        <a href="https://instagram.com" target="_blank" rel="noreferrer" aria-label="Instagram"><FaInstagram /></a>
-                        <a href="https://youtube.com" target="_blank" rel="noreferrer" aria-label="YouTube"><FaYoutube /></a>
+                        <a
+                            href="https://facebook.com"
+                            target="_blank"
+                            rel="noreferrer"
+                            aria-label="Facebook"
+                        >
+                            <FaFacebookF />
+                        </a>
+                        <a
+                            href="https://instagram.com"
+                            target="_blank"
+                            rel="noreferrer"
+                            aria-label="Instagram"
+                        >
+                            <FaInstagram />
+                        </a>
+                        <a
+                            href="https://youtube.com"
+                            target="_blank"
+                            rel="noreferrer"
+                            aria-label="YouTube"
+                        >
+                            <FaYoutube />
+                        </a>
                     </div>
                 </div>
             </div>
@@ -391,410 +501,1014 @@ function PageFooter() {
     );
 }
 
-export default function ShopDetail() {
-    const { id } = useParams();
+export default function ProductDetail() {
+    const { id: idParam } = useParams();
     const navigate = useNavigate();
-
     const [userLabel, setUserLabel] = useState(null);
     const [userAvatar, setUserAvatar] = useState(null);
-    const [dbCategories, setDbCategories] = useState([]);
-
-    const [shop, setShop] = useState(null);
-    const [products, setProducts] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
-
-    // Stats State
-    const [followerCount, setFollowerCount] = useState(0);
-    const [isFollowed, setIsFollowed] = useState(false);
-
-    // Filters State
-    const [catFilter, setCatFilter] = useState('');
-    const [sizeFilter, setSizeFilter] = useState('');
-    const [colorFilter, setColorFilter] = useState('');
-    const [priceRanges, setPriceRanges] = useState([]);
-    const [searchTerm, setSearchTerm] = useState('');
-    const [sortBy, setSortBy] = useState('newest');
 
     useEffect(() => {
-        async function loadInitialData() {
+        async function loadUser() {
             const token = localStorage.getItem("token");
-            if (token) {
-                try {
-                    const profile = await api.get("/users/profile").then(res => res.data);
-                    setUserLabel(profile.fullName || profile.email || profile.username);
-                    setUserAvatar(profile.avatarUrl || null);
-                } catch (err) {
-                    console.error("Lỗi tải profile:", err);
-                }
+            if (!token) {
+                setUserLabel(null);
+                setUserAvatar(null);
+                return;
             }
             try {
+                const profile = await api.get("/users/profile").then(res => res.data);
+                setUserLabel(profile.fullName || profile.email || profile.username);
+                setUserAvatar(profile.avatarUrl || null);
+            } catch (err) {
+                console.error("Lỗi tải profile:", err);
+            }
+        }
+        loadUser();
+    }, []);
+
+    const [product, setProduct] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState("");
+    const [notFound, setNotFound] = useState(false);
+    const [selectedImage, setSelectedImage] = useState("");
+    const [quantity, setQuantity] = useState(1);
+
+    // Biến thể (Variants)
+    const [selectedSize, setSelectedSize] = useState("");
+    const [selectedColor, setSelectedColor] = useState("");
+
+    const [dbCategories, setDbCategories] = useState([]);
+    const [wishlisted, setWishlisted] = useState(false);
+    const [shopInfo, setShopInfo] = useState(null);
+
+    // Báo cáo (Report)
+    const [showReportModal, setShowReportModal] = useState(false);
+    const [reportType, setReportType] = useState("");
+    const [reportDescription, setReportDescription] = useState("");
+    const [isSubmittingReport, setIsSubmittingReport] = useState(false);
+
+    const reportReasons = [
+        "Sản phẩm có dấu hiệu lừa đảo",
+        "Hàng giả, hàng nhái",
+        "Sản phẩm không rõ nguồn gốc, xuất xứ",
+        "Hình ảnh sản phẩm không rõ ràng",
+        "Sản phẩm có hình ảnh, nội dung phản cảm hoặc có thể gây phản cảm",
+        "Tên sản phẩm (Name) không phù hợp với hình ảnh sản phẩm",
+        "Sản phẩm có dấu hiệu tăng đơn ảo",
+        "Sản phẩm chứa hình ảnh và thông tin giao dịch ngoài sàn",
+        "Sản phẩm bị cấm buôn bán (động vật hoang dã, 18+,...)",
+        "Khác"
+    ];
+
+    // Tải danh mục
+    useEffect(() => {
+        async function fetchCats() {
+            try {
+                // Bypass cache bằng cách không truyền limit mặc định hoặc truyền limit cao
                 const res = await CategoryService.getAllCategories();
-                const categories = Array.isArray(res) ? res : Array.isArray(res.data) ? res.data : [];
+                // CategoryService.getAllCategories returns response.data already
+                const categories = Array.isArray(res)
+                    ? res
+                    : Array.isArray(res.data)
+                        ? res.data
+                        : [];
                 setDbCategories(categories);
             } catch (err) {
                 console.error("Lỗi tải danh mục:", err);
             }
         }
-        loadInitialData();
+        fetchCats();
     }, []);
 
+    // Tải chi tiết sản phẩm
     useEffect(() => {
-        async function loadShopData() {
+        async function loadProductDetail() {
+            if (!idParam) return;
+            setLoading(true);
+            setError("");
+            setNotFound(false);
+
             try {
-                setLoading(true);
-                setError(null);
+                const res = await ShopProductService.getProductById(idParam);
+                const data = res?.data || res;
 
-                const shopData = await ShopCuahangService.getStoreById(id);
-                setShop(shopData);
-                // Initialize follow count if available in shopData, else use 0
-                setFollowerCount(shopData.followerCount || 0);
+                if (data) {
+                    setProduct(data);
+                    const initialImage = data.thumbnail ||
+                        (data.images && data.images.length > 0
+                            ? (typeof data.images[0] === 'string' ? data.images[0] : data.images[0].imageUrl)
+                            : "");
+                    setSelectedImage(initialImage);
 
-                const productsData = await ShopProductService.getProductShop(id, 200);
-                const prods = Array.isArray(productsData) ? productsData : (productsData.data || []);
-
-                setProducts(prods);
+                    if (data.variants && data.variants.length > 0) {
+                        const firstVariant = data.variants[0];
+                        setSelectedSize(firstVariant.size);
+                        setSelectedColor(firstVariant.color || "");
+                    }
+                } else {
+                    setNotFound(true);
+                }
             } catch (err) {
-                console.error("Lỗi tải trang shop:", err);
-                setError("Không thể tải thông tin cửa hàng.");
+                console.error("Lỗi tải sp:", err);
+                setError("Không thể tải thông tin sản phẩm. Vિય lòng thử lại.");
             } finally {
                 setLoading(false);
             }
         }
-        if (id) loadShopData();
-    }, [id]);
+        loadProductDetail();
+    }, [idParam]);
+
+    // Tải thông tin cửa hàng
+    useEffect(() => {
+        async function loadShopInfo() {
+            if (!idParam) return;
+            try {
+                const shopData = await ShopCuahangService.getStoreByProduct(idParam);
+                if (shopData) {
+                    setShopInfo(shopData);
+                }
+            } catch (err) {
+                console.error("Lỗi tải thông tin shop:", err);
+            }
+        }
+        loadShopInfo();
+    }, [idParam]);
+
+    // --- LOGIC XỬ LÝ BIẾN THỂ ---
+    const currentVariant = useMemo(() => {
+        if (!product || !product.variants) return null;
+        return (
+            product.variants.find(
+                (v) =>
+                    v.size === selectedSize &&
+                    (v.color === selectedColor || (!v.color && !selectedColor)),
+            ) ||
+            product.variants.find((v) => v.size === selectedSize) ||
+            product.variants[0]
+        );
+    }, [product, selectedSize, selectedColor]);
+
+    const uniqueSizes = useMemo(() => {
+        if (!product || !product.variants) return [];
+        return [...new Set(product.variants.map((v) => v.size))];
+    }, [product]);
+
+    const colorsForSelectedSize = useMemo(() => {
+        if (!product || !product.variants || !selectedSize) return [];
+        const colors = product.variants
+            .filter((v) => v.size === selectedSize && v.color)
+            .map((v) => v.color);
+        return [...new Set(colors)];
+    }, [product, selectedSize]);
+
+    const displayPrice = currentVariant
+        ? currentVariant.price
+        : product
+            ? product.price
+            : 0;
+    const stockAvailable = currentVariant ? currentVariant.stock : 0;
+
+    // Find category ID for linking
+    const resolvedCategoryId = useMemo(() => {
+        if (!product || !dbCategories.length) return null;
+        return dbCategories.find(
+            (c) =>
+                c.name?.toLowerCase().trim() ===
+                product.categoryName?.toLowerCase().trim(),
+        )?.id;
+    }, [product, dbCategories]);
+
+    // --- LOGIC ẢNH ---
+    const allImages = useMemo(() => {
+        if (!product) return [];
+        // ✅ Hỗ trợ cả trường hợp images là mảng string hoặc mảng object {imageUrl}
+        const secondaryImages = (product.images || []).map((img) =>
+            typeof img === "string" ? img : img.imageUrl,
+        );
+        return [product.thumbnail, ...secondaryImages].filter(Boolean);
+    }, [product]);
+
+    const handlePrevImage = () => {
+        const currentIndex = allImages.indexOf(selectedImage);
+        if (currentIndex === -1) return;
+        const prevIndex = (currentIndex - 1 + allImages.length) % allImages.length;
+        setSelectedImage(allImages[prevIndex]);
+    };
+
+    const handleNextImage = () => {
+        const currentIndex = allImages.indexOf(selectedImage);
+        if (currentIndex === -1) return;
+        const nextIndex = (currentIndex + 1) % allImages.length;
+        setSelectedImage(allImages[nextIndex]);
+    };
+
+    const findImageByColor = (color) => {
+        console.log("🔍 findImageByColor - color:", color);
+        console.log("🔍 findImageByColor - allImages:", allImages);
+        if (!color || !allImages.length) return null;
+
+        const removeTones = (str) => {
+            if (!str) return "";
+            return str
+                .normalize("NFD")
+                .replace(/[\u0300-\u036f]/g, "")
+                .replace(/đ/g, "d")
+                .replace(/Đ/g, "D")
+                .toLowerCase()
+                .trim();
+        };
+
+        const colorTranslations = {
+            "den": ["den", "black"],
+            "trang": ["trang", "white"],
+            "do": ["do", "red"],
+            "vang": ["vang", "yellow"],
+            "xanh la": ["xanhla", "green"],
+            "xanh duong": ["xanhduong", "blue"],
+            "xanh bien": ["xanhbien", "blue"],
+            "xam": ["xam", "gray", "grey"],
+            "hong": ["hong", "pink"],
+            "cam": ["cam", "orange"],
+            "nau": ["nau", "brown"],
+            "tim": ["tim", "purple"],
+        };
+
+        const cleanColor = removeTones(color);
+        const keywords = [cleanColor];
+        if (colorTranslations[cleanColor]) {
+            keywords.push(...colorTranslations[cleanColor]);
+        }
+        console.log("🔍 findImageByColor - keywords:", keywords);
+
+        // Cách 1: Tìm theo từ khóa trong URL ảnh
+        const matched = allImages.find((img) => {
+            const lowerImg = img.toLowerCase();
+            const isMatch = keywords.some((kw) => lowerImg.includes(kw));
+            console.log(`  Checking img: ${lowerImg} against keywords -> Match: ${isMatch}`);
+            return isMatch;
+        });
+
+        if (matched) {
+            console.log("🔍 findImageByColor - matched image by keyword:", matched);
+            return matched;
+        }
+
+        // Cách 2: Khớp theo index (nếu ảnh lưu trên S3 có tên random/UUID)
+        if (product && product.variants) {
+            const uniqueColors = [...new Set(product.variants.map((v) => v.color).filter(Boolean))];
+            const colorIndex = uniqueColors.indexOf(color);
+            if (colorIndex !== -1 && allImages[colorIndex]) {
+                console.log(`🔍 findImageByColor - matched image by index [${colorIndex}]:`, allImages[colorIndex]);
+                return allImages[colorIndex];
+            }
+        }
+
+        console.log("🔍 findImageByColor - no match found");
+        return null;
+    };
+
+    const handleColorChange = (color) => {
+        setSelectedColor(color);
+        const matchedImage = findImageByColor(color);
+        if (matchedImage) {
+            setSelectedImage(matchedImage);
+        }
+    };
+
+    const handleColorHover = (color) => {
+        const matchedImage = findImageByColor(color);
+        if (matchedImage) {
+            setSelectedImage(matchedImage);
+        }
+    };
+
+    const handleColorLeave = () => {
+        if (selectedColor) {
+            const matchedImage = findImageByColor(selectedColor);
+            if (matchedImage) {
+                setSelectedImage(matchedImage);
+            }
+        }
+    };
+
+    const handleSelectImage = (img) => {
+        setSelectedImage(img);
+        if (!colorsForSelectedSize.length) return;
+
+        const removeTones = (str) => {
+            if (!str) return "";
+            return str
+                .normalize("NFD")
+                .replace(/[\u0300-\u036f]/g, "")
+                .replace(/đ/g, "d")
+                .replace(/Đ/g, "D")
+                .toLowerCase()
+                .trim();
+        };
+
+        const colorTranslations = {
+            "den": ["den", "black"],
+            "trang": ["trang", "white"],
+            "do": ["do", "red"],
+            "vang": ["vang", "yellow"],
+            "xanh la": ["xanhla", "green"],
+            "xanh duong": ["xanhduong", "blue"],
+            "xanh bien": ["xanhbien", "blue"],
+            "xam": ["xam", "gray", "grey"],
+            "hong": ["hong", "pink"],
+            "cam": ["cam", "orange"],
+            "nau": ["nau", "brown"],
+            "tim": ["tim", "purple"],
+        };
+
+        const lowerImg = img.toLowerCase();
+
+        // Cách 1: Tìm theo từ khóa trong tên ảnh
+        const matchedColor = colorsForSelectedSize.find((color) => {
+            const cleanColor = removeTones(color);
+            const keywords = [cleanColor];
+            if (colorTranslations[cleanColor]) {
+                keywords.push(...colorTranslations[cleanColor]);
+            }
+            return keywords.some((kw) => lowerImg.includes(kw));
+        });
+
+        if (matchedColor) {
+            setSelectedColor(matchedColor);
+            return;
+        }
+
+        // Cách 2: Khớp ngược lại theo index của ảnh trong allImages
+        const imgIndex = allImages.indexOf(img);
+        if (imgIndex !== -1) {
+            if (colorsForSelectedSize[imgIndex]) {
+                setSelectedColor(colorsForSelectedSize[imgIndex]);
+            } else {
+                const uniqueColors = [...new Set(product.variants.map((v) => v.color).filter(Boolean))];
+                if (uniqueColors[imgIndex]) {
+                    setSelectedColor(uniqueColors[imgIndex]);
+                }
+            }
+        }
+    };
 
     const handleLogout = () => {
+
         localStorage.removeItem("token");
         localStorage.removeItem("userRole");
         window.location.href = "/login";
     };
 
-    const handleToggleFollow = () => {
-        if (!userLabel) {
-            toast.error("Vui lòng đăng nhập để theo dõi shop.");
+
+    const handleAddToCart = async () => {
+        if (!currentVariant) {
+            toast.error("Vui lòng chọn đầy đủ kích thước và màu sắc.");
+            return;
+        }
+
+        if (quantity > stockAvailable) {
+            toast.error(
+                `Xin lỗi, chúng tôi chỉ còn ${stockAvailable} sản phẩm trong kho.`,
+            );
+            return;
+        }
+
+        try {
+            const res = await CartService.addToCart(
+                currentVariant.variantId,
+                quantity,
+            );
+            if (res.data || res.status === 200 || res.status === 201) {
+                toast.success("Đã thêm sản phẩm vào giỏ hàng thành công!", { duration: 1000 });
+                window.dispatchEvent(new Event('cart-updated'));
+                // Cập nhật lại số lượng còn lại nếu cần (optional)
+            }
+        } catch (err) {
+            console.error("Lỗi thêm giỏ hàng:", err);
+            const errorMessage =
+                err.response?.data?.message || "Có lỗi xảy ra khi thêm vào giỏ hàng.";
+            toast.error(errorMessage);
+        }
+    };
+
+    const handleBuyNow = () => {
+        if (!currentVariant) {
+            toast.error("Vui lòng chọn đầy đủ kích thước và màu sắc.");
+            return;
+        }
+
+        if (quantity > stockAvailable) {
+            toast.error(
+                `Xin lỗi, chúng tôi chỉ còn ${stockAvailable} sản phẩm trong kho.`,
+            );
+            return;
+        }
+
+
+        const token = localStorage.getItem("token");
+        if (!token) {
+            toast.error("Vui lòng đăng nhập để mua hàng!");
             navigate("/login");
             return;
         }
 
-        if (isFollowed) {
-            setFollowerCount(prev => Math.max(0, prev - 1));
-            toast.success("Đã bỏ theo dõi shop");
-        } else {
-            setFollowerCount(prev => prev + 1);
-            toast.success("Đã theo dõi shop");
-        }
-        setIsFollowed(!isFollowed);
+        navigate("/checkout", {
+            state: {
+                type: "BUY_NOW",
+
+                variantId: currentVariant.variantId,
+                quantity,
+            },
+        });
+
+    };
+
+    const handleTryOnAI = () => {
+        if (!product) return;
+
+        const productId = product.id;
+        const thumbnailUrl =
+            selectedImage ||
+            product.thumbnail ||
+            (product.images && product.images.length > 0 ? (typeof product.images[0] === 'string' ? product.images[0] : product.images[0].imageUrl) : "") ||
+            "";
+        const productName = product.name || "Sản phẩm";
+        const price = product.price || 0;
+
+        const url = `/ai-virtual-tryon?productId=${productId}&thumbnail=${encodeURIComponent(thumbnailUrl)}&productName=${encodeURIComponent(productName)}&price=${price}`;
+        navigate(url);
+    };
+
+    const handleCompareNow = () => {
+        if (!product?.id) return;
+        navigate(`/compare?ids=${product.id}`);
     };
 
     const handleChatNow = async () => {
         if (!userLabel) {
-            toast.error("Vui lòng đăng nhập để chat.");
+            toast.error("Vui lòng đăng nhập để chat với cửa hàng.");
             navigate("/login");
             return;
         }
+
+        const shopId =
+            shopInfo?.StoreId ||
+            shopInfo?.storeId ||
+            product?.StoreId ||
+            product?.storeId;
+        if (!shopId) {
+            toast.error("Không tìm thấy thông tin cửa hàng.");
+            return;
+        }
+
         try {
-            // Truyền storeId để backend tạo/tìm conversation
-            const shopIdToChat = shop?.storeId || id;
-            const res = await chatService.startChat(shopIdToChat);
-            if (res && res.ConversationId) navigate("/chat", { state: { conversationId: res.ConversationId } });
-            else navigate("/chat");
+            const res = await chatService.startChat(shopId);
+            if (res && res.ConversationId) {
+                navigate("/chat", { state: { conversationId: res.ConversationId } });
+            } else {
+                navigate("/chat");
+            }
         } catch (err) {
-            console.error("Lỗi khi bắt đầu chat:", err);
+            console.error("Lỗi bắt đầu chat:", err);
             navigate("/chat");
         }
     };
 
-    const handlePriceToggle = (range) => {
-        if (priceRanges.includes(range)) {
-            setPriceRanges(priceRanges.filter(r => r !== range));
-        } else {
-            setPriceRanges([...priceRanges, range]);
+    const handleSendReport = async () => {
+        if (!userLabel) {
+            toast.error("Vui lòng đăng nhập để gửi báo cáo.");
+            navigate("/login");
+            return;
+        }
+        if (!reportType) {
+            toast.error("Vui lòng chọn lý do báo cáo.");
+            return;
+        }
+
+        setIsSubmittingReport(true);
+        try {
+            await adminService.createReport({
+                productId: parseInt(idParam),
+                reportType: reportType,
+                description: reportDescription || reportType,
+                evidenceImages: [] // Có thể mở rộng thêm tính năng upload ảnh bằng chứng sau
+            });
+            toast.success("Cảm ơn bạn đã gửi báo cáo. Chúng tôi sẽ sớm xem xét!");
+            setShowReportModal(false);
+            setReportType("");
+            setReportDescription("");
+        } catch (err) {
+            console.error("Lỗi gửi báo cáo:", err);
+            toast.error(err.message || "Không thể gửi báo cáo vào lúc này.");
+        } finally {
+            setIsSubmittingReport(false);
         }
     };
-
-    const handleNavClick = (catId) => {
-        if (catId === "all") navigate("/");
-        else navigate(`/category/${catId}`);
-    };
-
-    // CLIENT-SIDE FILTERING LOGIC
-    const filteredProducts = useMemo(() => {
-        let result = products.filter(p => p.approvalStatus === 'APPROVED' || p.ApprovalStatus === 'APPROVED' || !p.approvalStatus); // Keep products without status if API doesn't return it yet
-
-        // Search filter
-        if (searchTerm) {
-            const lowerSearch = searchTerm.toLowerCase();
-            result = result.filter(p => p.name?.toLowerCase().includes(lowerSearch));
-        }
-
-        // Category filter
-        if (catFilter) {
-            result = result.filter(p => p.categoryName === catFilter);
-        }
-
-        // Size & Color filter (Check if any variant matches)
-        if (sizeFilter || colorFilter) {
-            result = result.filter(p => {
-                if (!p.variants || p.variants.length === 0) return false;
-                return p.variants.some(v => {
-                    let matchSize = sizeFilter ? v.size === sizeFilter : true;
-                    let matchColor = colorFilter ? v.color === colorFilter : true;
-                    return matchSize && matchColor;
-                });
-            });
-        }
-
-        // Price filtering
-        if (priceRanges.length > 0) {
-            result = result.filter(p => {
-                const price = Number(p.price);
-                return priceRanges.some(range => {
-                    if (range === '<500') return price < 500000;
-                    if (range === '500-1000') return price >= 500000 && price <= 1000000;
-                    if (range === '>1000') return price > 1000000;
-                    return false;
-                });
-            });
-        }
-
-        // Sort
-        if (sortBy === 'lowest_price') result.sort((a, b) => a.price - b.price);
-        if (sortBy === 'highest_price') result.sort((a, b) => b.price - a.price);
-
-        return result;
-    }, [products, searchTerm, catFilter, sizeFilter, colorFilter, priceRanges, sortBy]);
-
-    // Extract unique filters from loaded products
-    const availableCategories = useMemo(() => [...new Set(products.map(p => p.categoryName).filter(Boolean))], [products]);
-    const availableSizes = useMemo(() => {
-        const sizes = new Set();
-        products.forEach(p => p.variants?.forEach(v => { if (v.size) sizes.add(v.size); }));
-        return [...sizes];
-    }, [products]);
-    const availableColors = useMemo(() => {
-        const colors = new Set();
-        products.forEach(p => p.variants?.forEach(v => { if (v.color) colors.add(v.color); }));
-        return [...colors];
-    }, [products]);
-
 
     if (loading) {
         return (
-            <div className="shop-detail-page">
-                <PageHeader userLabel={userLabel} userAvatar={userAvatar} dbCategories={dbCategories} onLogout={handleLogout} />
-                <div style={{ padding: "100px 0", textAlign: "center" }}>
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-                </div>
+            <div className="pd-loading-container">
+                <div className="pd-spinner"></div>
+                <p>Đang tải thông tin sản phẩm...</p>
             </div>
         );
     }
 
-    if (error || !shop) {
+    if (notFound || !product) {
         return (
-            <div className="shop-detail-page">
-                <PageHeader userLabel={userLabel} userAvatar={userAvatar} dbCategories={dbCategories} onLogout={handleLogout} />
-                <div style={{ padding: "100px 0", textAlign: "center" }}>
-                    <h2>Không tìm thấy cửa hàng</h2>
-                </div>
+            <div className="pd-error-container">
+                <h2>404</h2>
+                <p>Sản phẩm không tồn tại hoặc đã bị xóa.</p>
+                <Link to="/" className="btn-primary">
+                    Quay lại trang chủ
+                </Link>
             </div>
         );
     }
 
     return (
-        <div className="shop-detail-page">
-            <PageHeader userLabel={userLabel} userAvatar={userAvatar} dbCategories={dbCategories} onLogout={handleLogout} />
+        <div className="pd-page-wrapper landing-page-container">
+            <PageHeader
+                userLabel={userLabel}
+                userAvatar={userAvatar}
+                dbCategories={dbCategories}
+                onLogout={handleLogout}
+            />
 
-            {/* Header Profile */}
-            <div className="shop-header-wrapper">
-                <div className="shop-header-inner">
-                    <div className="shop-avatar-box">
-                        <img src={shop.logoUrl || "https://via.placeholder.com/150"} alt={shop.storeName} />
-                    </div>
-
-                    <div className="shop-header-center">
-                        <div className="shop-title-row">
-                            <h1>{shop.storeName}</h1>
-                            <span className="badge-verified"><FaCheckCircle className="text-green-500" /> Đã xác thực</span>
-                        </div>
-                        <p className="shop-bio">{shop.description || "Thương hiệu thời trang mang đến phong cách tối giản và tinh tế."}</p>
-
-                        <div className="shop-stats-row">
-                            <div className="shop-stat-item"><FaStar className="text-yellow-400" /> <strong>{shop.rating || 4.9}</strong> / 5.0</div>
-                            <div className="shop-stat-item"><FaBox className="text-blue-500" /> <strong>{shop.productCount ?? products.length}</strong> Sản phẩm</div>
-                            <div className="shop-stat-item"><FaUsers className="text-green-500" /> <strong>{followerCount}</strong> Người theo dõi</div>
-                            <div className="shop-stat-item"><FaCalendarAlt className="text-orange-500" /> Tham gia: <strong>{new Date(shop.createdAt).toLocaleDateString("vi-VN")}</strong></div>
-                        </div>
-                    </div>
-
-                    <div className="shop-header-actions">
-                        <button className="shop-action-btn btn-chat" onClick={handleChatNow}><FiMessageCircle /> Chat ngay</button>
-                    </div>
-                </div>
-            </div>
-
-            <main className="shop-main-layout">
-                <div className="shop-content-grid">
-
-                    {/* LEFT SIDEBAR */}
-                    <aside className="shop-sidebar">
-                        <div className="sidebar-main-title">
-                            <FaFilter className="text-blue-600" /> BỘ LỌC TÌM KIẾM
-                        </div>
-
-                        <div className="shipping-promo-card">
-                            <div className="promo-header">
-                                <FaTruck className="promo-icon" />
-                                <span>ƯU ĐÃI VẬN CHUYỂN</span>
-                            </div>
-                            <p className="promo-text">Miễn phí vận chuyển cho mọi đơn hàng từ 1 triệu đồng. Giao hỏa tốc trong 2h tại TP.HCM.</p>
-                        </div>
-
-                        {/* Filters */}
-                        <div className="sidebar-card">
-                            <div className="sidebar-header">
-                                <h3><FaFilter className="text-gray-400" /> Danh sách sản phẩm</h3>
-
-                            </div>
-                            <div className="sidebar-body">
-
-                                {/* Categories */}
-                                {availableCategories.length > 0 && (
-                                    <div className="filter-group">
-                                        <div className="filter-title">LOẠI SẢN PHẨM</div>
-                                        <div className="category-grid">
-                                            <div className={`filter-btn ${catFilter === '' ? 'active' : ''}`} onClick={() => setCatFilter('')}>Tất cả</div>
-                                            {availableCategories.map(cat => (
-                                                <div key={cat} className={`filter-btn ${catFilter === cat ? 'active' : ''}`} onClick={() => setCatFilter(cat)}>{cat}</div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* Sizes */}
-                                {availableSizes.length > 0 && (
-                                    <div className="filter-group">
-                                        <div className="filter-title">KÍCH THƯỚC</div>
-                                        <div className="size-grid">
-                                            <div className={`size-btn ${sizeFilter === '' ? 'active' : ''}`} onClick={() => setSizeFilter('')}>All</div>
-                                            {availableSizes.map(size => (
-                                                <div key={size} className={`size-btn ${sizeFilter === size ? 'active' : ''}`} onClick={() => setSizeFilter(size)}>{size}</div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* Colors (Mocked visually but functions on text) */}
-                                {availableColors.length > 0 && (
-                                    <div className="filter-group">
-                                        <div className="filter-title">MÀU SẮC</div>
-                                        <div className="color-grid">
-                                            <div className={`filter-btn ${colorFilter === '' ? 'active' : ''}`} onClick={() => setColorFilter('')}>All</div>
-                                            {availableColors.map(color => {
-                                                const colorMap = {
-                                                    "Đen": "#1a1a1a",
-                                                    "Trắng": "#ffffff",
-                                                    "Xanh": "#2563eb",
-                                                    "Xanh dương": "#2563eb",
-                                                    "Xanh lá": "#10b981",
-                                                    "Đỏ": "#ef4444",
-                                                    "Be": "#f5f5dc",
-                                                    "Vàng": "#facc15",
-                                                    "Hồng": "#ec4899",
-                                                    "Xám": "#9ca3af",
-                                                    "Tím": "#8b5cf6",
-                                                    "Cam": "#f97316",
-                                                    "Nâu": "#78350f"
-                                                };
-                                                const hex = colorMap[color] || "#cbd5e1";
-                                                return (
-                                                    <div
-                                                        key={color}
-                                                        className={`color-dot ${colorFilter === color ? 'active' : ''}`}
-                                                        style={{ backgroundColor: hex }}
-                                                        title={color}
-                                                        onClick={() => setColorFilter(color)}
-                                                    />
-                                                )
-                                            })}
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* Price */}
-                                <div className="filter-group">
-                                    <div className="filter-title">KHOẢNG GIÁ</div>
-                                    <div className="checkbox-list">
-                                        <label className="checkbox-item">
-                                            <input type="checkbox" checked={priceRanges.includes('<500')} onChange={() => handlePriceToggle('<500')} /> Dưới 500k
-                                        </label>
-                                        <label className="checkbox-item">
-                                            <input type="checkbox" checked={priceRanges.includes('500-1000')} onChange={() => handlePriceToggle('500-1000')} /> 500k - 1tr
-                                        </label>
-                                        <label className="checkbox-item">
-                                            <input type="checkbox" checked={priceRanges.includes('>1000')} onChange={() => handlePriceToggle('>1000')} /> Trên 1tr
-                                        </label>
-                                    </div>
-                                </div>
-
-                            </div>
-                        </div>
-
-                    </aside>
-
-                    {/* RIGHT CONTENT */}
-                    <section className="shop-content-area">
-
-                        {/* Toolbar */}
-                        <div className="shop-toolbar">
-                            <div className="toolbar-left">
-                                <button className="btn-filter-mobile" style={{ display: 'none' }}><FaFilter /> Lọc</button>
-                                <div className="toolbar-search">
-                                    <FaSearch />
-                                    <input
-                                        type="text"
-                                        placeholder="Tìm sản phẩm..."
-                                        value={searchTerm}
-                                        onChange={(e) => setSearchTerm(e.target.value)}
-                                    />
-                                </div>
-                            </div>
-                            <div className="toolbar-right">
-                                <span>Sắp xếp:</span>
-                                <select className="sort-select" value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
-                                    <option value="newest">Mới nhất</option>
-                                    <option value="lowest_price">Giá thấp đến cao</option>
-                                    <option value="highest_price">Giá cao đến thấp</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        {/* Product Grid */}
-                        <div className="products-header">
-                            <h2>Tất cả sản phẩm <span>({filteredProducts.length})</span></h2>
-                        </div>
-
-                        {filteredProducts.length === 0 ? (
-                            <div style={{ textAlign: 'center', padding: '60px 20px', background: 'white', borderRadius: '8px' }}>
-                                <p style={{ color: '#6b7280' }}>Không tìm thấy sản phẩm nào khớp với bộ lọc.</p>
-                                <button className="btn-text-link mt-4 mx-auto" onClick={() => {
-                                    setSearchTerm(''); setCatFilter(''); setSizeFilter(''); setColorFilter(''); setPriceRanges([]);
-                                }}>Xóa bộ lọc</button>
-                            </div>
+            <main className="pd-main-content">
+                <div className="container">
+                    {/* Breadcrumbs */}
+                    <nav className="pd-breadcrumb" aria-label="Breadcrumb">
+                        <Link to="/">Trang chủ</Link>
+                        <span className="pd-sep">/</span>
+                        {resolvedCategoryId ? (
+                            <Link to={`/category/${resolvedCategoryId}`}>
+                                {product.categoryName || "Sản phẩm"}
+                            </Link>
                         ) : (
-                            <div className="shop-product-grid">
-                                {filteredProducts.map(product => (
-                                    <ProductCard key={product.id || product.ProductId} product={product} />
-                                ))}
-                            </div>
+                            <span>{product.categoryName || "Sản phẩm"}</span>
                         )}
+                        <span className="pd-sep">/</span>
+                        <span className="pd-current">{product.name}</span>
+                    </nav>
 
-                        {filteredProducts.length > 0 && <button className="btn-load-more">Xem thêm sản phẩm</button>}
+                    <div className="pd-product-grid">
+                        {/* Gallery */}
+                        <div className="pd-gallery-section">
+                            <div className="pd-main-image-wrap">
+                                <img
+                                    src={selectedImage}
+                                    alt={product.name}
+                                    className="pd-main-image"
+                                />
+
+                                {allImages.length > 1 && (
+                                    <>
+                                        <button
+                                            className="pd-nav-btn pd-nav-prev"
+                                            onClick={handlePrevImage}
+                                            aria-label="Ảnh trước"
+                                        >
+                                            <FaChevronLeft />
+                                        </button>
+                                        <button
+                                            className="pd-nav-btn pd-nav-next"
+                                            onClick={handleNextImage}
+                                            aria-label="Ảnh tiếp"
+                                        >
+                                            <FaChevronRight />
+                                        </button>
+                                    </>
+                                )}
+
+                                <button
+                                    className={`pd-wishlist-btn ${wishlisted ? "active" : ""}`}
+                                    onClick={() => setWishlisted(!wishlisted)}
+                                    aria-label="Thêm vào yêu thích"
+                                >
+                                    <FaHeart />
+                                </button>
+                            </div>
+                            {product.images && product.images.length > 0 && (
+                                <div className="pd-thumbnail-grid">
+                                    {allImages.map((img, idx) => (
+                                        <div
+                                            key={idx}
+                                            className={`pd-thumb-item ${selectedImage === img ? "active" : ""}`}
+                                            onClick={() => handleSelectImage(img)}
+                                        >
+                                            <img src={img} alt={`Xem thêm ${idx}`} />
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Product Info */}
+                        <div className="pd-info-section">
+                            <div className="pd-badge-row">
+                                <span className="pd-badge pd-badge-dark">CỬA HÀNG</span>
+                                {resolvedCategoryId ? (
+                                    <Link
+                                        to={`/category/${resolvedCategoryId}`}
+                                        className="pd-category-link"
+                                    >
+                                        {product.categoryName}
+                                    </Link>
+                                ) : (
+                                    <span className="pd-category-link">
+                                        {product.categoryName}
+                                    </span>
+                                )}
+                            </div>
+
+                            <div className="pd-title-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '20px' }}>
+                                <h1 className="pd-title" style={{ margin: 0, flex: 1 }}>{product.name}</h1>
+                                <button
+                                    className="pd-report-trigger-btn"
+                                    onClick={() => setShowReportModal(true)}
+                                    title="Báo cáo sản phẩm"
+                                    style={{
+                                        background: 'none',
+                                        border: 'none',
+                                        color: '#9ca3af',
+                                        cursor: 'pointer',
+                                        padding: '8px',
+                                        borderRadius: '50%',
+                                        transition: 'all 0.2s',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center'
+                                    }}
+                                    onMouseOver={(e) => e.currentTarget.style.color = '#ef4444'}
+                                    onMouseOut={(e) => e.currentTarget.style.color = '#9ca3af'}
+                                >
+                                    <FaFlag size={18} />
+                                </button>
+                            </div>
+
+                            <div
+                                className="pd-meta-row"
+                                style={{ marginTop: "8px", color: "#6b7280", fontSize: "14px" }}
+                            >
+                                Lượt bán:{" "}
+                                <strong style={{ color: "#1f2937", marginLeft: "4px" }}>
+                                    {product.sold || 0}
+                                </strong>
+                            </div>
+
+                            <div className="pd-price-card">
+                                <div className="pd-price-row">
+                                    <span className="pd-current-price">
+                                        {new Intl.NumberFormat("vi-VN", {
+                                            style: "currency",
+                                            currency: "VND",
+                                        }).format(displayPrice)}
+                                    </span>
+                                </div>
+                            </div>
+
+                            {/* Options */}
+                            <div className="pd-options-container">
+                                {/* Size */}
+                                <div className="pd-option-item">
+                                    <div className="pd-option-label-wrap">
+                                        <span className="pd-option-label">Kích thước</span>
+                                    </div>
+                                    <div className="pd-size-grid">
+                                        {uniqueSizes.map((size) => (
+                                            <button
+                                                key={size}
+                                                className={`pd-size-chip ${selectedSize === size ? "active" : ""}`}
+                                                onClick={() => {
+                                                    setSelectedSize(size);
+                                                    // Chọn màu đầu tiên khả dụng của size này
+                                                    const firstColor = product.variants.find(
+                                                        (v) => v.size === size,
+                                                    )?.color;
+                                                    if (firstColor) handleColorChange(firstColor);
+                                                }}
+                                            >
+                                                {size}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* Color */}
+                                {colorsForSelectedSize.length > 0 && (
+                                    <div className="pd-option-item">
+                                        <span className="pd-option-label">Màu sắc</span>
+                                        <div className="pd-color-grid">
+                                            {colorsForSelectedSize.map((color) => (
+                                                <button
+                                                    key={color}
+                                                    className={`pd-color-chip ${selectedColor === color ? "active" : ""}`}
+                                                    onClick={() => handleColorChange(color)}
+                                                    onMouseEnter={() => handleColorHover(color)}
+                                                    onMouseLeave={() => handleColorLeave()}
+                                                >
+                                                    {color}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Quantity */}
+                                <div className="pd-option-item">
+                                    <span className="pd-option-label">Số lượng</span>
+                                    <div className="pd-quantity-row">
+                                        <div className="pd-qty-selector">
+                                            <button
+                                                onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                                                disabled={quantity <= 1}
+                                            >
+                                                -
+                                            </button>
+                                            <input
+                                                type="number"
+                                                value={quantity}
+                                                min="1"
+                                                max={stockAvailable}
+                                                onChange={(e) => {
+                                                    const val = parseInt(e.target.value) || 1;
+                                                    setQuantity(
+                                                        Math.min(Math.max(1, val), stockAvailable || 1),
+                                                    );
+                                                }}
+                                            />
+                                            <button
+                                                onClick={() =>
+                                                    setQuantity(Math.min(quantity + 1, stockAvailable))
+                                                }
+                                                disabled={quantity >= stockAvailable}
+                                            >
+                                                +
+                                            </button>
+                                        </div>
+                                        <span className="pd-stock-status">
+                                            {stockAvailable > 0 ? (
+                                                `Còn ${stockAvailable} sản phẩm`
+                                            ) : (
+                                                <span className="text-red">Hết hàng</span>
+                                            )}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Actions */}
+                            <div className="pd-action-btns">
+                                <button
+                                    className="pd-btn pd-btn-outline pd-btn-large"
+                                    onClick={handleAddToCart}
+                                    disabled={stockAvailable <= 0}
+                                >
+                                    <FaShoppingCart /> Thêm vào giỏ hàng
+                                </button>
+                                <button
+                                    className="pd-btn pd-btn-primary pd-btn-large"
+                                    onClick={handleBuyNow}
+                                    disabled={stockAvailable <= 0}
+                                >
+                                    Mua ngay
+                                </button>
+                            </div>
+
+                            <button className="pd-magic-fit-btn" onClick={handleTryOnAI}>
+                                <span className="sparkle-icon" style={{ fontSize: "20px" }}>
+                                    ✨
+                                </span>{" "}
+                                Thử đồ ngay với AI Magic Fit
+                            </button>
+
+                            <button className="pd-compare-btn" onClick={handleCompareNow}>
+                                So sánh sản phẩm này
+                            </button>
+
+                            {/* Features */}
+                            <div className="pd-features-list">
+                                <div className="pd-feature-item">
+                                    <FaShieldAlt className="icon-blue" />
+                                    <span>7 ngày trả hàng</span>
+                                </div>
+                                <div className="pd-feature-item">
+                                    <FaCheck className="icon-green" />
+                                    <span>100% Chính hãng</span>
+                                </div>
+                                <div className="pd-feature-item">
+                                    <FaTruck className="icon-blue" />
+                                    <span>Miễn phí vận chuyển</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Shop Banner */}
+                    <section className="pd-store-section">
+                        <div className="pd-store-info">
+                            <div className="pd-store-avatar-wrap">
+                                <img
+                                    src={
+                                        shopInfo?.logoUrl ||
+                                        "https://i.pinimg.com/originals/a9/71/d8/a971d8b69fdc16c9ca3222a38e895226.jpg"
+                                    }
+                                    alt={shopInfo?.storeName || "Cửa hàng"}
+                                    className="pd-store-avatar"
+                                />
+                                <span className="pd-store-badge">YÊU THÍCH +</span>
+                            </div>
+                            <div className="pd-store-details">
+                                <h3 className="pd-store-name">
+                                    {shopInfo?.storeName || "SmartAI Fashion Flagship Store"}
+                                </h3>
+                                <div className="pd-store-stats">
+                                    <div className="pd-stat-item">
+                                        Phản hồi:{" "}
+                                        <span className="text-blue">99% (trong vài phút)</span>
+                                    </div>
+                                    <span className="pd-store-sep">|</span>
+                                    <div className="pd-stat-item">
+                                        Sản phẩm:{" "}
+                                        <span className="text-blue">
+                                            {shopInfo?.productCount || 0}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="pd-store-actions">
+                            <button
+                                className="pd-btn-store pd-btn-chat"
+                                onClick={handleChatNow}
+                            >
+                                Chat ngay
+                            </button>
+
+                            <button
+                                className="pd-btn-store pd-btn-view-store"
+                                onClick={() => {
+                                    const shopIdToView = shopInfo?.StoreId || shopInfo?.storeId || product?.StoreId || product?.storeId;
+                                    if (shopIdToView) navigate(`/shop/${shopIdToView}`);
+                                }}
+                            >
+                                Xem cửa hàng
+                            </button>
+                        </div>
+                    </section>
+
+                    {/* Description */}
+                    <section className="pd-description-section">
+                        <h2
+                            className="pd-section-title"
+                            style={{ display: "flex", alignItems: "center", gap: "10px" }}
+                        >
+                            <FaStar style={{ color: "#0ea5e9", fontSize: "20px" }} />
+                            Chi tiết sản phẩm
+                        </h2>
+                        <div
+                            className="pd-description-content"
+                            style={{
+                                background: "#f8fafc",
+                                padding: "32px",
+                                borderRadius: "20px",
+                                boxShadow: "inset 0 2px 10px rgba(0,0,0,0.02)",
+                                border: "1px solid #e2e8f0",
+                                minHeight: "150px",
+                            }}
+                        >
+                            {product.description || "Chưa có mô tả cho sản phẩm này."}
+                        </div>
                     </section>
                 </div>
             </main>
 
             <PageFooter />
+
+            {/* Modal Báo Cáo */}
+            {showReportModal && (
+                <div className="pd-modal-overlay" style={{
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    backgroundColor: 'rgba(0,0,0,0.5)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    zIndex: 9999,
+                    padding: '20px'
+                }}>
+                    <div className="pd-report-modal" style={{
+                        backgroundColor: 'white',
+                        borderRadius: '12px',
+                        width: '100%',
+                        maxWidth: '500px',
+                        maxHeight: '90vh',
+                        overflow: 'hidden',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)'
+                    }}>
+                        <div className="pd-modal-header" style={{
+                            padding: '20px',
+                            borderBottom: '1px solid #f3f4f6',
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center'
+                        }}>
+                            <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 600 }}>Chọn lý do</h3>
+                            <button onClick={() => setShowReportModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9ca3af' }}>
+                                <FaTimes size={20} />
+                            </button>
+                        </div>
+
+                        <div className="pd-modal-body" style={{ padding: '0', overflowY: 'auto', flex: 1 }}>
+                            <div className="pd-reasons-list">
+                                {reportReasons.map((reason, idx) => (
+                                    <button
+                                        key={idx}
+                                        className={`pd-reason-item ${reportType === reason ? 'active' : ''}`}
+                                        onClick={() => setReportType(reason)}
+                                        style={{
+                                            width: '100%',
+                                            textAlign: 'left',
+                                            padding: '16px 20px',
+                                            border: 'none',
+                                            background: 'none',
+                                            cursor: 'pointer',
+                                            borderBottom: '1px solid #f9fafb',
+                                            fontSize: '14px',
+                                            color: reportType === reason ? '#ef4444' : '#374151',
+                                            transition: 'background 0.2s',
+                                            fontWeight: reportType === reason ? 500 : 400
+                                        }}
+                                        onMouseOver={(e) => { if (reportType !== reason) e.currentTarget.style.backgroundColor = '#f9fafb'; }}
+                                        onMouseOut={(e) => { if (reportType !== reason) e.currentTarget.style.backgroundColor = 'transparent'; }}
+                                    >
+                                        {reason}
+                                    </button>
+                                ))}
+                            </div>
+
+                            {reportType === "Khác" && (
+                                <div style={{ padding: '20px' }}>
+                                    <textarea
+                                        placeholder="Mô tả chi tiết lý do của bạn..."
+                                        value={reportDescription}
+                                        onChange={(e) => setReportDescription(e.target.value)}
+                                        style={{
+                                            width: '100%',
+                                            padding: '12px',
+                                            borderRadius: '8px',
+                                            border: '1px solid #d1d5db',
+                                            minHeight: '100px',
+                                            fontSize: '14px',
+                                            outline: 'none'
+                                        }}
+                                    />
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="pd-modal-footer" style={{ padding: '20px', borderTop: '1px solid #f3f4f6', display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
+                            <button
+                                onClick={() => setShowReportModal(false)}
+                                style={{
+                                    padding: '10px 20px',
+                                    borderRadius: '8px',
+                                    border: '1px solid #d1d5db',
+                                    background: 'white',
+                                    fontSize: '14px',
+                                    fontWeight: 500,
+                                    cursor: 'pointer'
+                                }}
+                            >
+                                Hủy
+                            </button>
+                            <button
+                                onClick={handleSendReport}
+                                disabled={isSubmittingReport || !reportType}
+                                style={{
+                                    padding: '10px 24px',
+                                    borderRadius: '8px',
+                                    border: 'none',
+                                    background: isSubmittingReport || !reportType ? '#fca5a5' : '#ef4444',
+                                    color: 'white',
+                                    fontSize: '14px',
+                                    fontWeight: 600,
+                                    cursor: isSubmittingReport || !reportType ? 'not-allowed' : 'pointer'
+                                }}
+                            >
+                                {isSubmittingReport ? "Đang gửi..." : "Gửi báo cáo"}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
+

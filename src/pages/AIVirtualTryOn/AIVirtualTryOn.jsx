@@ -195,26 +195,26 @@ const AIVirtualTryOn = () => {
         Price: price ? parseInt(price) : 0,
       });
       console.log("✅ Sản phẩm được set từ URL");
-    }
 
-    // Gọi API tải thêm tất cả hình ảnh chi tiết của sản phẩm để hỗ trợ chọn màu/biến thể
-    ShopProductService.getProductById(productId)
-      .then((res) => {
-        const fullProduct = res?.data || res;
-        if (fullProduct) {
-          const secondaryImages = (fullProduct.images || []).map((img) =>
-            typeof img === "string" ? img : img.imageUrl
-          );
-          const allImgs = [fullProduct.thumbnail, ...secondaryImages].filter(Boolean);
-          setSelectedProduct((prev) => ({
-            ...prev,
-            AllImages: allImgs,
-          }));
-        }
-      })
-      .catch((err) => {
-        console.error("Lỗi khi tải chi tiết sản phẩm:", err);
-      });
+      // Gọi API tải thêm tất cả hình ảnh chi tiết của sản phẩm để hỗ trợ chọn màu/biến thể
+      ShopProductService.getProductById(productId)
+        .then((res) => {
+          const fullProduct = res?.data || res;
+          if (fullProduct) {
+            const secondaryImages = (fullProduct.images || []).map((img) =>
+              typeof img === "string" ? img : img.imageUrl
+            );
+            const allImgs = [fullProduct.thumbnail, ...secondaryImages].filter(Boolean);
+            setSelectedProduct((prev) => ({
+              ...prev,
+              AllImages: allImgs,
+            }));
+          }
+        })
+        .catch((err) => {
+          console.error("Lỗi khi tải chi tiết sản phẩm:", err);
+        });
+    }
 
     loadCategories();
   }, [searchParams]);
@@ -549,7 +549,7 @@ const AIVirtualTryOn = () => {
               {cat.name}
             </span>
           ))}
-
+        
           <Link
             to={
               localStorage.getItem('userRole')?.toLowerCase().includes('shop')
@@ -709,6 +709,7 @@ const AIVirtualTryOn = () => {
                         borderRadius: "0.4rem",
                       }}
                     />
+
                     {/* Danh sách các màu/ảnh chi tiết của sản phẩm */}
                     {selectedProduct.AllImages && selectedProduct.AllImages.length > 1 && (
                       <div
@@ -758,6 +759,7 @@ const AIVirtualTryOn = () => {
                         ))}
                       </div>
                     )}
+
                     <div
                       style={{
                         marginTop: "0.75rem",

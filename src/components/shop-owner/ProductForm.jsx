@@ -24,6 +24,7 @@ import { useNavigate } from "react-router-dom";
 import ConfirmModal from "./ConfirmModal";
 import { ShopProductService } from "../../services/ShopProductService";
 import { CategoryService } from "../../services/CategoryService";
+import toast from "react-hot-toast";
 
 // =============================================================================
 // [0] DANH SÁCH GỢI Ý (SUGGESTIONS)
@@ -39,7 +40,7 @@ const COMMON_SIZES = [
     "Freesize",
     "One size",
 ];
-const SHOE_SIZES = ["36", "37", "38", "39", "40", "41", "42", "43", "44", "45"];
+const SHOE_SIZES = ["26", "27", "28", "29", "30", "31", "32", "33", "34", "35", "36", "37", "38", "39", "40"];
 const ALL_SIZE_OPTIONS = [...COMMON_SIZES, ...SHOE_SIZES];
 
 // =============================================================================
@@ -447,27 +448,19 @@ const ProductForm = ({ initialData, isEdit = false }) => {
         const files = Array.from(e.target.files);
         if (files.length === 0) return;
 
-        // Tính toán số lượng ảnh thực tế hiện có (không tính ảnh chờ xóa)
-        const currentActiveCount = formData.images.length - removeImageIds.length;
-        const remainSlots = 6 - currentActiveCount;
-
-        if (remainSlots <= 0) {
-            setErrors((prev) => ({ ...prev, images: "Bạn đã đạt giới hạn tối đa 6 hình ảnh" }));
-            return;
-        }
 
         const imageErrors = [];
         const newPendingFiles = [];
 
         // Lấy danh sách tên file đang chờ để chặn trùng lặp
-        const pendingFileNames = pendingFiles.map(f => `${f.name}-${f.size}`);
+        const pendingFileKeys = pendingFiles.map(f => `${f.name}-${f.size}`);
 
-        files.slice(0, remainSlots).forEach((file) => {
+        files.forEach((file) => {
             const fileKey = `${file.name}-${file.size}`;
 
-            // Chặn spam cùng 1 file
-            if (pendingFileNames.includes(fileKey)) {
-                console.log(`⚠️ Skip duplicate file: ${file.name}`);
+            // Chặn spam cùng 1 file (kiểm tra cả file đã chọn trước đó và file vừa chọn trong cùng 1 lần)
+            if (pendingFileKeys.includes(fileKey) || newPendingFiles.some(f => `${f.name}-${f.size}` === fileKey)) {
+                toast.error(`Ảnh "${file.name}" đã được chọn`);
                 return;
             }
 
@@ -1305,14 +1298,12 @@ const ProductForm = ({ initialData, isEdit = false }) => {
                                     </div>
                                 );
                             })}
-                            {formData.images.length - removeImageIds.length < 6 && (
-                                <div
-                                    onClick={() => fileInputRef.current.click()}
-                                    className="aspect-square rounded-2xl border-2 border-dashed border-slate-200 flex items-center justify-center text-slate-300 hover:border-blue-300 hover:text-blue-400 cursor-pointer transition-all"
-                                >
-                                    <FiPlus size={20} />
-                                </div>
-                            )}
+                            <div
+                                onClick={() => fileInputRef.current.click()}
+                                className="aspect-square rounded-2xl border-2 border-dashed border-slate-200 flex items-center justify-center text-slate-300 hover:border-blue-300 hover:text-blue-400 cursor-pointer transition-all"
+                            >
+                                <FiPlus size={20} />
+                            </div>
                         </div>
                     </div>
 

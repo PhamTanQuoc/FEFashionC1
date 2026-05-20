@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useLayoutEffect, useRef, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
   FiArrowLeft,
@@ -149,6 +149,7 @@ const ChatPage = () => {
   const chatScrollRef = useRef(null);
   const lastMsgIdRef = useRef(null);
   const activeConvIdRef = useRef(activeConvId);
+  const convLoadedTime = useRef(Date.now());
 
   // Đồng bộ ref với state
   useEffect(() => {
@@ -162,15 +163,34 @@ const ChatPage = () => {
   // ── Scroll to bottom ──
   const scrollToBottom = useCallback(
     (force = false) => {
-      // Dùng setTimeout để đảm bảo DOM đã render xong
-      setTimeout(() => {
-        if (messagesEndRef.current) {
-          messagesEndRef.current.scrollIntoView({ behavior: "auto", block: "end" });
-        }
-      }, 100);
+      if (chatScrollRef.current) {
+        chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
+      }
+      if (messagesEndRef.current) {
+        messagesEndRef.current.scrollIntoView({ behavior: "auto", block: "end" });
+      }
     },
-    [], // Không phụ thuộc vào loadingMsgs hay loadingMore nữa
+    [],
   );
+
+  // Khóa cuộn ở dưới cùng khi có thay đổi kích thước (trừ khi người dùng đã cuộn lên)
+  useLayoutEffect(() => {
+    const container = chatScrollRef.current;
+    if (!container) return;
+
+    const observer = new ResizeObserver(() => {
+      if (!showScrollBottom) {
+        container.scrollTop = container.scrollHeight;
+      }
+    });
+
+    observer.observe(container);
+    if (container.firstElementChild) {
+      observer.observe(container.firstElementChild);
+    }
+
+    return () => observer.disconnect();
+  }, [showScrollBottom]);
 
   // ── Load thêm tin nhắn cũ (cursor pagination) ──
   const loadMoreMessages = useCallback(async () => {
@@ -218,7 +238,8 @@ const ChatPage = () => {
     }
 
     // 3. ── Infinite Scroll: Tự động load tin cũ khi cuộn lên sát đầu (100px) ──
-    if (scrollTop < 100 && nextCursor && !loadingMore && !loadingMsgs) {
+    const timeSinceLoad = Date.now() - convLoadedTime.current;
+    if (scrollTop < 100 && nextCursor && !loadingMore && !loadingMsgs && timeSinceLoad > 1500) {
       loadMoreMessages();
     }
   }, [nextCursor, loadingMore, loadingMsgs, loadMoreMessages]);
@@ -238,7 +259,7 @@ const ChatPage = () => {
           }).catch(err => console.error(err));
           return prev;
         }
-        
+
         return prev.map((c) =>
           c.ConversationId === msg.ConversationId
             ? { ...c, Messages: [msg] }
@@ -287,6 +308,15 @@ const ChatPage = () => {
     lastMsgIdRef.current = lastMsg.MessageId;
   }, [messages, loadingMore, showScrollBottom, scrollToBottom]);
 
+  // Cuộn xuống cuối khi load xong tin nhắn của cuộc hội thoại mới
+  useEffect(() => {
+    if (!loadingMsgs && activeConvId) {
+      setShowScrollBottom(false);
+      setHasNewMessages(false);
+      scrollToBottom(true);
+    }
+  }, [loadingMsgs, activeConvId, scrollToBottom]);
+
   // ── Chọn conversation ──
   const selectConversation = useCallback(
     async (convId) => {
@@ -294,6 +324,10 @@ const ChatPage = () => {
       setActiveConvId(convId);
       setMessages([]);
       setNextCursor(null);
+      lastMsgIdRef.current = null;
+      setShowScrollBottom(false);
+      setHasNewMessages(false);
+      convLoadedTime.current = Date.now();
       joinConversation(convId);
 
       try {
@@ -301,14 +335,14 @@ const ChatPage = () => {
         const result = await chatService.getMessages(convId, null, 20);
         setMessages(result.data || []);
         setNextCursor(result.nextCursor || null);
-        scrollToBottom(true);
       } catch (err) {
         console.error("Error loading messages:", err);
       } finally {
         setLoadingMsgs(false);
+        convLoadedTime.current = Date.now();
       }
     },
-    [joinConversation, scrollToBottom],
+    [joinConversation],
   );
 
   // ── Load danh sách conversations ──
@@ -499,8 +533,8 @@ const ChatPage = () => {
             ) : (
               filteredConvs.map((conv) => {
                 const { name, avatar } = getConvDisplay(conv, myUserId);
-                const lastMsg = conv.Messages && conv.Messages.length > 0 
-                  ? conv.Messages[conv.Messages.length - 1] 
+                const lastMsg = conv.Messages && conv.Messages.length > 0
+                  ? conv.Messages[conv.Messages.length - 1]
                   : null;
                 const isActive = conv.ConversationId === activeConvId;
                 return (
@@ -607,14 +641,19 @@ const ChatPage = () => {
                                 if (content.startsWith('{"type":"PRODUCT"')) {
                                   const product = JSON.parse(content);
                                   return (
-                                    <div 
+                                    <div
                                       className="message-bubble product-bubble"
                                       onClick={() => navigate(`/products/${product.productId}`)}
                                       title="Xem chi tiết sản phẩm"
                                     >
                                       <div className="product-card">
                                         <div className="product-card-img-wrapper">
-                                          <img src={product.thumbnail} alt={product.productName} className="product-card-img" />
+                                          <img
+                                            src={product.thumbnail}
+                                            alt={product.productName}
+                                            className="product-card-img"
+                                            onLoad={() => scrollToBottom()}
+                                          />
                                         </div>
                                         <div className="product-card-info">
                                           <div className="product-card-name">{product.productName}</div>
@@ -628,7 +667,7 @@ const ChatPage = () => {
                                     </div>
                                   );
                                 }
-                              } catch (e) {}
+                              } catch (e) { }
 
                               if (content.startsWith("http")) {
                                 return (
@@ -639,6 +678,7 @@ const ChatPage = () => {
                                       className="chat-image"
                                       onClick={() => setPreviewImage(content)}
                                       style={{ cursor: "zoom-in" }}
+                                      onLoad={() => scrollToBottom()}
                                       onError={(e) => {
                                         e.target.src = "";
                                         e.target.alt = "Ảnh lỗi";
@@ -733,8 +773,8 @@ const ChatPage = () => {
           )}
         </main>
       </div>
-      
-      <ProductSelectorModal 
+
+      <ProductSelectorModal
         isOpen={isProductModalOpen}
         onClose={() => setIsProductModalOpen(false)}
         onSelect={handleSelectProduct}
@@ -743,8 +783,8 @@ const ChatPage = () => {
 
       {/* Image Preview Overlay */}
       {previewImage && (
-        <div 
-          className="image-preview-overlay" 
+        <div
+          className="image-preview-overlay"
           onClick={() => setPreviewImage(null)}
           style={{
             position: 'fixed',
@@ -760,18 +800,18 @@ const ChatPage = () => {
             cursor: 'zoom-out'
           }}
         >
-          <img 
-            src={previewImage} 
-            alt="Preview" 
-            style={{ 
-              maxWidth: '90%', 
-              maxHeight: '90%', 
+          <img
+            src={previewImage}
+            alt="Preview"
+            style={{
+              maxWidth: '90%',
+              maxHeight: '90%',
               objectFit: 'contain',
               borderRadius: '8px',
               boxShadow: '0 4px 20px rgba(0,0,0,0.5)',
               transform: 'scale(1)',
               transition: 'transform 0.2s ease-out'
-            }} 
+            }}
           />
         </div>
       )}

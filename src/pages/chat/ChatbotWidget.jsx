@@ -271,129 +271,130 @@ const ChatbotWidget = () => {
           <div className="chatbot-content-wrapper">
             <div className="chatbot-main-area">
               {/* Body */}
-          <div className="chatbot-body" ref={bodyRef}>
-            {isLoadingHistory ? (
-              <div className="chatbot-loading">
-                <div className="chatbot-spinner" />
-                <span style={{ fontSize: "13px" }}>Đang tải lịch sử...</span>
-              </div>
-            ) : messages.length === 0 ? (
-              /* Welcome Screen */
-              <div className="chatbot-welcome">
-                <div className="chatbot-welcome-icon">🛍️</div>
-                <h4>Xin chào! 👋</h4>
-                <p>
-                  Tôi là trợ lý mua sắm AI của SmartAI Fashion.
-                  <br />
-                  Hãy hỏi tôi về sản phẩm, size, phong cách nhé!
-                </p>
-                <div className="chatbot-quick-actions">
-                  {QUICK_QUESTIONS.map((q, i) => (
-                    <button
-                      key={i}
-                      className="chatbot-quick-btn"
-                      onClick={() => handleQuickQuestion(q)}
-                    >
-                      {q}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            ) : (
-              /* Messages */
-              <>
-                {messages.map((msg, idx) => (
-                  <div key={idx} className={`chatbot-msg ${msg.role}`}>
-                    <div className="chatbot-msg-avatar">
-                      {msg.role === "model" ? "🤖" : "👤"}
+              <div className="chatbot-body" ref={bodyRef}>
+                {isLoadingHistory ? (
+                  <div className="chatbot-loading">
+                    <div className="chatbot-spinner" />
+                    <span style={{ fontSize: "13px" }}>Đang tải lịch sử...</span>
+                  </div>
+                ) : messages.length === 0 ? (
+                  /* Welcome Screen */
+                  <div className="chatbot-welcome">
+                    <div className="chatbot-welcome-icon">🛍️</div>
+                    <h4>Xin chào! 👋</h4>
+                    <p>
+                      Tôi là trợ lý mua sắm AI của SmartAI Fashion.
+                      <br />
+                      Hãy hỏi tôi về sản phẩm, size, phong cách nhé!
+                    </p>
+                    <div className="chatbot-quick-actions">
+                      {QUICK_QUESTIONS.map((q, i) => (
+                        <button
+                          key={i}
+                          className="chatbot-quick-btn"
+                          onClick={() => handleQuickQuestion(q)}
+                        >
+                          {q}
+                        </button>
+                      ))}
                     </div>
-                    <div className="chatbot-msg-content">
-                      {msg.role === "model" ? (
-                        <div
-                          className="chatbot-msg-bubble"
-                          dangerouslySetInnerHTML={{ __html: parseMarkdown(msg.content) }}
-                        />
-                      ) : (
-                        <div className="chatbot-msg-bubble">{msg.content}</div>
-                      )}
+                  </div>
+                ) : (
+                  /* Messages */
+                  <>
+                    {messages.map((msg, idx) => (
+                      <div key={idx} className={`chatbot-msg ${msg.role}`}>
+                        <div className="chatbot-msg-avatar">
+                          {msg.role === "model" ? "🤖" : "👤"}
+                        </div>
+                        <div className="chatbot-msg-content">
+                          {msg.role === "model" ? (
+                            <div
+                              className="chatbot-msg-bubble"
+                              dangerouslySetInnerHTML={{ __html: parseMarkdown(msg.content) }}
+                            />
+                          ) : (
+                            <div className="chatbot-msg-bubble">{msg.content}</div>
+                          )}
 
-                      {/* Suggested Products */}
-                      {msg.suggestedProducts &&
-                        msg.suggestedProducts.length > 0 && (
-                          <div className="chatbot-products">
-                            {msg.suggestedProducts.map((product) => (
-                              <div
-                                key={product.productId}
-                                className="chatbot-product-card"
-                                onClick={() =>
-                                  navigate(`/products/${product.productId}`)
-                                }
-                                title={product.productName}
-                              >
-                                {product.thumbnailUrl && (
-                                  <img
-                                    src={product.thumbnailUrl}
-                                    alt={product.productName}
-                                    loading="lazy"
-                                    onError={(e) => {
-                                      e.target.style.display = "none";
-                                    }}
-                                  />
-                                )}
-                                <div className="chatbot-product-info">
-                                  <p className="chatbot-product-name">
-                                    {product.productName}
-                                  </p>
-                                  <p className="chatbot-product-price">
-                                    {formatPrice(product.price)}
-                                  </p>
-                                  {product.storeName && (
-                                    <p className="chatbot-product-shop">
-                                      🏪 {product.storeName}
-                                    </p>
-                                  )}
-                                  <button
-                                    className="chatbot-product-detail-btn"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      navigate(`/products/${product.productId}`);
-                                    }}
+                          {/* Suggested Products */}
+                          {msg.suggestedProducts &&
+                            msg.suggestedProducts.length > 0 && (
+                              <div className="chatbot-products">
+                                {msg.suggestedProducts.map((product) => (
+                                  <div
+                                    key={product.productId}
+                                    className="chatbot-product-card"
+                                    onClick={() =>
+                                      navigate(`/products/${product.productId}`)
+                                    }
+                                    title={product.productName}
                                   >
-                                    Chi tiết
-                                    <FiArrowRight size={14} />
-                                  </button>
-                                </div>
+                                    {product.thumbnailUrl && (
+                                      <img
+                                        src={product.thumbnailUrl}
+                                        alt={product.productName}
+                                        loading="lazy"
+                                        onLoad={scrollToBottom}
+                                        onError={(e) => {
+                                          e.target.style.display = "none";
+                                        }}
+                                      />
+                                    )}
+                                    <div className="chatbot-product-info">
+                                      <p className="chatbot-product-name">
+                                        {product.productName}
+                                      </p>
+                                      <p className="chatbot-product-price">
+                                        {formatPrice(product.price)}
+                                      </p>
+                                      {product.storeName && (
+                                        <p className="chatbot-product-shop">
+                                          🏪 {product.storeName}
+                                        </p>
+                                      )}
+                                      <button
+                                        className="chatbot-product-detail-btn"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          navigate(`/products/${product.productId}`);
+                                        }}
+                                      >
+                                        Chi tiết
+                                        <FiArrowRight size={14} />
+                                      </button>
+                                    </div>
+                                  </div>
+                                ))}
                               </div>
-                            ))}
-                          </div>
-                        )}
+                            )}
 
-                      <span className="chatbot-msg-time">
-                        {formatTime(msg.timestamp)}
-                      </span>
-                    </div>
-                  </div>
-                ))}
+                          <span className="chatbot-msg-time">
+                            {formatTime(msg.timestamp)}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
 
-                {/* Typing Indicator */}
-                {isLoading && (
-                  <div className="chatbot-typing">
-                    <div className="chatbot-typing-avatar">🤖</div>
-                    <div className="chatbot-typing-dots">
-                      <span />
-                      <span />
-                      <span />
-                    </div>
-                  </div>
+                    {/* Typing Indicator */}
+                    {isLoading && (
+                      <div className="chatbot-typing">
+                        <div className="chatbot-typing-avatar">🤖</div>
+                        <div className="chatbot-typing-dots">
+                          <span />
+                          <span />
+                          <span />
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Error */}
+                    {error && <div className="chatbot-error">{error}</div>}
+
+                    <div ref={messagesEndRef} />
+                  </>
                 )}
-
-                {/* Error */}
-                {error && <div className="chatbot-error">{error}</div>}
-
-                <div ref={messagesEndRef} />
-              </>
-            )}
-          </div>
+              </div>
 
               {/* Input Area */}
               <div className="chatbot-input-area">

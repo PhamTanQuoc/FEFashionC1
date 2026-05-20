@@ -455,12 +455,34 @@ const ProductForm = ({ initialData, isEdit = false }) => {
         // Lấy danh sách tên file đang chờ để chặn trùng lặp
         const pendingFileKeys = pendingFiles.map(f => `${f.name}-${f.size}`);
 
+        // Lấy danh sách URL đã có sẵn trên server (để chặn trùng lặp với ảnh cũ)
+        const existingUrls = existingImagesInfo
+            .filter(info => !removeImageIds.includes(info.imageId))
+            .map(info => decodeURIComponent(info.imageUrl));
+
         files.forEach((file) => {
             const fileKey = `${file.name}-${file.size}`;
+            const cleanUploadName = file.name.replace(/^color-[^-]+-/, "");
 
-            // Chặn spam cùng 1 file (kiểm tra cả file đã chọn trước đó và file vừa chọn trong cùng 1 lần)
-            if (pendingFileKeys.includes(fileKey) || newPendingFiles.some(f => `${f.name}-${f.size}` === fileKey)) {
-                toast.error(`Ảnh "${file.name}" đã được chọn`);
+            // Chặn spam cùng 1 file (kiểm tra file đã chọn, file vừa chọn, và file đã có trên server)
+            const isExistingDuplicate = existingUrls.some(url => url.includes(cleanUploadName));
+
+            if (
+                pendingFileKeys.includes(fileKey) ||
+                newPendingFiles.some(f => `${f.name}-${f.size}` === fileKey) ||
+                isExistingDuplicate
+            ) {
+                // Rút gọn tên file nếu quá dài để hiển thị thông báo đẹp hơn
+                let displayFileName = file.name;
+                if (displayFileName.length > 25) {
+                    const extIndex = displayFileName.lastIndexOf('.');
+                    const ext = extIndex !== -1 ? displayFileName.substring(extIndex) : '';
+                    const nameWithoutExt = extIndex !== -1 ? displayFileName.substring(0, extIndex) : displayFileName;
+                    displayFileName = `${nameWithoutExt.substring(0, 12)}...${nameWithoutExt.substring(nameWithoutExt.length - 6)}${ext}`;
+                }
+                toast.error(`Ảnh "${displayFileName}" đã tồn tại trong sản phẩm`, {
+                    style: { maxWidth: '400px', fontSize: '14px' }
+                });
                 return;
             }
 
